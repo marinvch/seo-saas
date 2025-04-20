@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
@@ -54,7 +55,7 @@ export default function LandingPage() {
           </div>
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
             All-in-One SEO Platform for{" "}
-            <span className="text-primary">Digital Agencies</span>
+            <span className="text-blue-600 dark:text-blue-400">Digital Agencies</span>
           </h1>
           <p className="text-xl text-muted-foreground">
             Streamline your agency's SEO workflows. Audit sites, track keywords,
@@ -63,7 +64,7 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 pt-4">
             <Link href="/auth/signup">
-              <Button size="lg" className="w-full sm:w-auto">
+              <Button size="lg" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white">
                 Start Free Trial
               </Button>
             </Link>
@@ -78,12 +79,15 @@ export default function LandingPage() {
           <div className="rounded-lg border bg-background shadow-lg p-2 dark:shadow-gray-900">
             <div className="rounded overflow-hidden">
               {!imageError ? (
-                <img 
-                  src="/images/dashboard-preview.png" 
-                  alt="SEOmaster Dashboard" 
-                  className="w-full"
-                  onError={() => setImageError(true)}
-                />
+                <div className="relative w-full h-80">
+                  <Image
+                    src="/images/dashboard-preview.png"
+                    alt="SEOmaster Dashboard"
+                    layout="fill"
+                    objectFit="cover"
+                    onError={() => setImageError(true)}
+                  />
+                </div>
               ) : (
                 <div className="h-80 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-950 dark:to-indigo-950 flex items-center justify-center">
                   <p className="text-center text-muted-foreground">
@@ -100,7 +104,7 @@ export default function LandingPage() {
       <section className="bg-slate-50 dark:bg-slate-900 py-20">
         <div className="container">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">
+            <h2 className="text-3xl font-bold mb-4 text-foreground">
               Everything agencies need to deliver exceptional SEO results
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
@@ -112,12 +116,12 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-3 gap-8">
             {/* Feature 1 */}
             <div className="bg-background rounded-lg p-6 shadow-sm">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600 dark:text-blue-300">
                   <path d="M20 7h-9"></path><path d="M14 17H5"></path><circle cx="17" cy="17" r="3"></circle><circle cx="7" cy="7" r="3"></circle>
                 </svg>
               </div>
-              <h3 className="text-lg font-bold mb-2">Site Auditing & Monitoring</h3>
+              <h3 className="text-lg font-bold mb-2 text-foreground">Site Auditing & Monitoring</h3>
               <p className="text-muted-foreground">
                 Comprehensive technical SEO audits with actionable recommendations.
                 Monitor site health 24/7 with automated alerts.
@@ -126,12 +130,12 @@ export default function LandingPage() {
             
             {/* Feature 2 */}
             <div className="bg-background rounded-lg p-6 shadow-sm">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600 dark:text-blue-300">
                   <path d="m2 2 8 8"></path><path d="m22 2-8 8"></path><ellipse cx="12" cy="18" rx="10" ry="4"></ellipse>
                 </svg>
               </div>
-              <h3 className="text-lg font-bold mb-2">Rank Tracking</h3>
+              <h3 className="text-lg font-bold mb-2 text-foreground">Rank Tracking</h3>
               <p className="text-muted-foreground">
                 Track keyword rankings across different locations and devices.
                 Monitor competitors and identify ranking opportunities.
@@ -140,12 +144,12 @@ export default function LandingPage() {
             
             {/* Feature 3 */}
             <div className="bg-background rounded-lg p-6 shadow-sm">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600 dark:text-blue-300">
                   <path d="M12 2v20"></path><path d="m19 7-7-5-7 5"></path><path d="M5 17a5 5 0 0 0 10 0c0-3-5-8-5-8s-5 5-5 8"></path>
                 </svg>
               </div>
-              <h3 className="text-lg font-bold mb-2">Backlink Analysis</h3>
+              <h3 className="text-lg font-bold mb-2 text-foreground">Backlink Analysis</h3>
               <p className="text-muted-foreground">
                 Discover and analyze your backlink profile. Monitor new and lost links
                 and compare against competitors.
@@ -232,7 +236,7 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gradient-to-r from-primary to-blue-600 text-white py-16">
+      <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-16">
         <div className="container text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to grow your agency?</h2>
           <p className="text-xl mb-8 max-w-2xl mx-auto">
@@ -240,7 +244,7 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/auth/signup">
-              <Button size="lg" variant="secondary" className="w-full sm:w-auto">
+              <Button size="lg" className="w-full sm:w-auto bg-white text-blue-600 hover:bg-gray-100">
                 Start Your Free Trial
               </Button>
             </Link>

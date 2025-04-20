@@ -31,7 +31,7 @@ export default function DashboardLayout({
           {/* Left side - Logo and mobile menu button */}
           <div className="flex items-center">
             <button 
-              className="mr-4 md:hidden"
+              className="mr-4 md:hidden text-slate-800 dark:text-slate-100"
               onClick={() => setSidebarOpen(!sidebarOpen)}
               aria-label="Toggle menu"
             >
@@ -60,7 +60,7 @@ export default function DashboardLayout({
           {/* Right side - User menu */}
           <div className="flex items-center space-x-4">
             {/* Notifications */}
-            <button className="relative p-2" aria-label="Notifications">
+            <button className="relative p-2 text-slate-800 dark:text-slate-100" aria-label="Notifications">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
@@ -83,7 +83,7 @@ export default function DashboardLayout({
             {/* User menu */}
             <div className="relative">
               <div className="flex items-center space-x-2 cursor-pointer">
-                <div className="h-8 w-8 rounded-full bg-slate-300 dark:bg-slate-700 flex items-center justify-center">
+                <div className="h-8 w-8 rounded-full bg-slate-300 dark:bg-slate-700 flex items-center justify-center text-slate-800 dark:text-white">
                   {session?.user?.image ? (
                     <img
                       src={session.user.image}
@@ -96,7 +96,7 @@ export default function DashboardLayout({
                     </span>
                   )}
                 </div>
-                <span className="hidden md:inline text-sm font-medium">
+                <span className="hidden md:inline text-sm font-medium dark:text-white">
                   {session?.user?.name || "User"}
                 </span>
               </div>
@@ -113,7 +113,7 @@ export default function DashboardLayout({
       >
         <nav className="space-y-6">
           <div>
-            <h3 className="mb-2 text-sm font-medium text-slate-500 dark:text-slate-400">
+            <h3 className="mb-2 text-sm font-medium text-slate-600 dark:text-slate-200">
               Dashboard
             </h3>
             <ul className="space-y-1">
@@ -123,7 +123,7 @@ export default function DashboardLayout({
                   className={`flex items-center space-x-2 rounded px-2 py-2 ${
                     pathname === "/dashboard"
                       ? "bg-primary text-white"
-                      : "hover:bg-slate-100 dark:hover:bg-slate-700"
+                      : "text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
                   }`}
                 >
                   <svg
@@ -148,12 +148,12 @@ export default function DashboardLayout({
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">
+              <h3 className="text-sm font-medium text-slate-600 dark:text-slate-200">
                 Projects
               </h3>
               <Link
                 href="/dashboard/projects/new"
-                className="text-xs text-primary hover:underline"
+                className="text-xs text-primary hover:underline dark:text-primary dark:hover:text-primary-foreground"
               >
                 + Add New
               </Link>
@@ -166,7 +166,7 @@ export default function DashboardLayout({
                   className={`flex items-center space-x-2 rounded px-2 py-2 ${
                     pathname === "/dashboard/projects"
                       ? "bg-primary text-white"
-                      : "hover:bg-slate-100 dark:hover:bg-slate-700"
+                      : "text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
                   }`}
                 >
                   <svg
@@ -190,7 +190,7 @@ export default function DashboardLayout({
           </div>
           
           <div>
-            <h3 className="mb-2 text-sm font-medium text-slate-500 dark:text-slate-400">
+            <h3 className="mb-2 text-sm font-medium text-slate-600 dark:text-slate-200">
               Tools
             </h3>
             <ul className="space-y-1">
@@ -200,7 +200,7 @@ export default function DashboardLayout({
                   className={`flex items-center space-x-2 rounded px-2 py-2 ${
                     pathname.startsWith("/dashboard/keywords")
                       ? "bg-primary text-white"
-                      : "hover:bg-slate-100 dark:hover:bg-slate-700"
+                      : "text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
                   }`}
                 >
                   <svg
@@ -226,7 +226,7 @@ export default function DashboardLayout({
                   className={`flex items-center space-x-2 rounded px-2 py-2 ${
                     pathname.startsWith("/dashboard/audits")
                       ? "bg-primary text-white"
-                      : "hover:bg-slate-100 dark:hover:bg-slate-700"
+                      : "text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
                   }`}
                 >
                   <svg
@@ -252,7 +252,7 @@ export default function DashboardLayout({
                   className={`flex items-center space-x-2 rounded px-2 py-2 ${
                     pathname.startsWith("/dashboard/competitors")
                       ? "bg-primary text-white"
-                      : "hover:bg-slate-100 dark:hover:bg-slate-700"
+                      : "text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
                   }`}
                 >
                   <svg
@@ -278,7 +278,7 @@ export default function DashboardLayout({
                   className={`flex items-center space-x-2 rounded px-2 py-2 ${
                     pathname.startsWith("/dashboard/content")
                       ? "bg-primary text-white"
-                      : "hover:bg-slate-100 dark:hover:bg-slate-700"
+                      : "text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
                   }`}
                 >
                   <svg
@@ -304,7 +304,7 @@ export default function DashboardLayout({
                   className={`flex items-center space-x-2 rounded px-2 py-2 ${
                     pathname.startsWith("/dashboard/ai-assistant")
                       ? "bg-primary text-white"
-                      : "hover:bg-slate-100 dark:hover:bg-slate-700"
+                      : "text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
                   }`}
                 >
                   <svg
@@ -328,7 +328,7 @@ export default function DashboardLayout({
           </div>
 
           <div>
-            <h3 className="mb-2 text-sm font-medium text-slate-500 dark:text-slate-400">
+            <h3 className="mb-2 text-sm font-medium text-slate-600 dark:text-slate-200">
               Settings
             </h3>
             <ul className="space-y-1">
@@ -338,7 +338,7 @@ export default function DashboardLayout({
                   className={`flex items-center space-x-2 rounded px-2 py-2 ${
                     pathname.startsWith("/dashboard/settings/organization")
                       ? "bg-primary text-white"
-                      : "hover:bg-slate-100 dark:hover:bg-slate-700"
+                      : "text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
                   }`}
                 >
                   <svg
@@ -364,7 +364,7 @@ export default function DashboardLayout({
                   className={`flex items-center space-x-2 rounded px-2 py-2 ${
                     pathname.startsWith("/dashboard/settings/team")
                       ? "bg-primary text-white"
-                      : "hover:bg-slate-100 dark:hover:bg-slate-700"
+                      : "text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
                   }`}
                 >
                   <svg
@@ -390,7 +390,7 @@ export default function DashboardLayout({
                   className={`flex items-center space-x-2 rounded px-2 py-2 ${
                     pathname.startsWith("/dashboard/settings/billing")
                       ? "bg-primary text-white"
-                      : "hover:bg-slate-100 dark:hover:bg-slate-700"
+                      : "text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
                   }`}
                 >
                   <svg
@@ -416,7 +416,7 @@ export default function DashboardLayout({
                   className={`flex items-center space-x-2 rounded px-2 py-2 ${
                     pathname.startsWith("/dashboard/settings/integrations")
                       ? "bg-primary text-white"
-                      : "hover:bg-slate-100 dark:hover:bg-slate-700"
+                      : "text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
                   }`}
                 >
                   <svg
@@ -442,7 +442,7 @@ export default function DashboardLayout({
           <div className="pt-4 mt-6 border-t border-slate-200 dark:border-slate-700">
             <Link
               href="/auth/signin?signout=true"
-              className="flex items-center space-x-2 rounded px-2 py-2 text-red-500 hover:bg-slate-100 dark:hover:bg-slate-700"
+              className="flex items-center space-x-2 rounded px-2 py-2 text-red-600 hover:bg-slate-100 dark:text-red-400 dark:hover:bg-slate-700"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
