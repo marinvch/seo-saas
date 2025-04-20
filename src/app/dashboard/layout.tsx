@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { ModeToggle } from "@/components/ui/theme-toggle";
 
 export default function DashboardLayout({
   children,
@@ -59,6 +60,9 @@ export default function DashboardLayout({
 
           {/* Right side - User menu */}
           <div className="flex items-center space-x-4">
+            {/* Theme Toggle */}
+            <ModeToggle />
+            
             {/* Notifications */}
             <button className="relative p-2 text-slate-800 dark:text-slate-100" aria-label="Notifications">
               <svg
@@ -105,15 +109,15 @@ export default function DashboardLayout({
         </div>
       </header>
 
-      {/* Sidebar */}
+      {/* Sidebar - Updated with sidebar color variables */}
       <aside
-        className={`fixed left-0 top-16 z-20 h-[calc(100vh-4rem)] w-64 transform overflow-y-auto border-r border-slate-200 bg-white p-4 transition-transform dark:border-slate-700 dark:bg-slate-800 md:translate-x-0 ${
+        className={`sidebar fixed left-0 top-16 z-20 h-[calc(100vh-4rem)] w-64 transform overflow-y-auto border-r border-sidebar-border bg-sidebar p-4 transition-transform md:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <nav className="space-y-6">
           <div>
-            <h3 className="mb-2 text-sm font-medium text-slate-600 dark:text-slate-200">
+            <h3 className="mb-2 text-sm font-medium text-sidebar-muted-foreground">
               Dashboard
             </h3>
             <ul className="space-y-1">
@@ -122,8 +126,8 @@ export default function DashboardLayout({
                   href="/dashboard"
                   className={`flex items-center space-x-2 rounded px-2 py-2 ${
                     pathname === "/dashboard"
-                      ? "bg-primary text-white"
-                      : "text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent"
                   }`}
                 >
                   <svg
@@ -148,12 +152,12 @@ export default function DashboardLayout({
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-slate-600 dark:text-slate-200">
+              <h3 className="text-sm font-medium text-sidebar-muted-foreground">
                 Projects
               </h3>
               <Link
                 href="/dashboard/projects/new"
-                className="text-xs text-primary hover:underline dark:text-primary dark:hover:text-primary-foreground"
+                className="text-xs text-primary hover:underline"
               >
                 + Add New
               </Link>
@@ -165,8 +169,8 @@ export default function DashboardLayout({
                   href="/dashboard/projects"
                   className={`flex items-center space-x-2 rounded px-2 py-2 ${
                     pathname === "/dashboard/projects"
-                      ? "bg-primary text-white"
-                      : "text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent"
                   }`}
                 >
                   <svg
@@ -190,7 +194,7 @@ export default function DashboardLayout({
           </div>
           
           <div>
-            <h3 className="mb-2 text-sm font-medium text-slate-600 dark:text-slate-200">
+            <h3 className="mb-2 text-sm font-medium text-sidebar-muted-foreground">
               Tools
             </h3>
             <ul className="space-y-1">
@@ -199,8 +203,8 @@ export default function DashboardLayout({
                   href="/dashboard/keywords"
                   className={`flex items-center space-x-2 rounded px-2 py-2 ${
                     pathname.startsWith("/dashboard/keywords")
-                      ? "bg-primary text-white"
-                      : "text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent"
                   }`}
                 >
                   <svg
@@ -225,8 +229,8 @@ export default function DashboardLayout({
                   href="/dashboard/audits"
                   className={`flex items-center space-x-2 rounded px-2 py-2 ${
                     pathname.startsWith("/dashboard/audits")
-                      ? "bg-primary text-white"
-                      : "text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent"
                   }`}
                 >
                   <svg
@@ -251,8 +255,8 @@ export default function DashboardLayout({
                   href="/dashboard/competitors"
                   className={`flex items-center space-x-2 rounded px-2 py-2 ${
                     pathname.startsWith("/dashboard/competitors")
-                      ? "bg-primary text-white"
-                      : "text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent"
                   }`}
                 >
                   <svg
@@ -277,8 +281,8 @@ export default function DashboardLayout({
                   href="/dashboard/content"
                   className={`flex items-center space-x-2 rounded px-2 py-2 ${
                     pathname.startsWith("/dashboard/content")
-                      ? "bg-primary text-white"
-                      : "text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent"
                   }`}
                 >
                   <svg
@@ -303,8 +307,8 @@ export default function DashboardLayout({
                   href="/dashboard/ai-assistant"
                   className={`flex items-center space-x-2 rounded px-2 py-2 ${
                     pathname.startsWith("/dashboard/ai-assistant")
-                      ? "bg-primary text-white"
-                      : "text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent"
                   }`}
                 >
                   <svg
@@ -328,7 +332,7 @@ export default function DashboardLayout({
           </div>
 
           <div>
-            <h3 className="mb-2 text-sm font-medium text-slate-600 dark:text-slate-200">
+            <h3 className="mb-2 text-sm font-medium text-sidebar-muted-foreground">
               Settings
             </h3>
             <ul className="space-y-1">
@@ -337,8 +341,8 @@ export default function DashboardLayout({
                   href="/dashboard/settings/organization"
                   className={`flex items-center space-x-2 rounded px-2 py-2 ${
                     pathname.startsWith("/dashboard/settings/organization")
-                      ? "bg-primary text-white"
-                      : "text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent"
                   }`}
                 >
                   <svg
@@ -363,8 +367,8 @@ export default function DashboardLayout({
                   href="/dashboard/settings/team"
                   className={`flex items-center space-x-2 rounded px-2 py-2 ${
                     pathname.startsWith("/dashboard/settings/team")
-                      ? "bg-primary text-white"
-                      : "text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent"
                   }`}
                 >
                   <svg
@@ -389,8 +393,8 @@ export default function DashboardLayout({
                   href="/dashboard/settings/billing"
                   className={`flex items-center space-x-2 rounded px-2 py-2 ${
                     pathname.startsWith("/dashboard/settings/billing")
-                      ? "bg-primary text-white"
-                      : "text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent"
                   }`}
                 >
                   <svg
@@ -415,8 +419,8 @@ export default function DashboardLayout({
                   href="/dashboard/settings/integrations"
                   className={`flex items-center space-x-2 rounded px-2 py-2 ${
                     pathname.startsWith("/dashboard/settings/integrations")
-                      ? "bg-primary text-white"
-                      : "text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent"
                   }`}
                 >
                   <svg
@@ -439,10 +443,10 @@ export default function DashboardLayout({
             </ul>
           </div>
           
-          <div className="pt-4 mt-6 border-t border-slate-200 dark:border-slate-700">
+          <div className="pt-4 mt-6 border-t border-sidebar-border">
             <Link
               href="/auth/signin?signout=true"
-              className="flex items-center space-x-2 rounded px-2 py-2 text-red-600 hover:bg-slate-100 dark:text-red-400 dark:hover:bg-slate-700"
+              className="flex items-center space-x-2 rounded px-2 py-2 text-red-500 hover:bg-sidebar-accent dark:text-red-400"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

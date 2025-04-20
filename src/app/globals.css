@@ -30,7 +30,7 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
   }
-
+ 
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
@@ -97,4 +97,14 @@
 
 .text-muted-high-contrast {
   @apply dark:text-slate-300 text-slate-600;
+}
+
+/* Sidebar specific classes */
+.sidebar {
+  @apply bg-sidebar text-sidebar-foreground;
+}
+
+/* Marketing section text (for dark sections on homepage) */
+.marketing-section-dark {
+  @apply bg-primary text-primary-foreground;
 }

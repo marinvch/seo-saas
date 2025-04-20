@@ -10,7 +10,8 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "SEO SaaS | Complete SEO Platform for Digital Agencies",
-  description: "All-in-one SEO platform for digital agencies with site auditing, rank tracking, keyword research, and more.",
+  description:
+    "All-in-one SEO platform for digital agencies with site auditing, rank tracking, keyword research, and more.",
 };
 
 export default function RootLayout({
@@ -22,7 +23,12 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <AuthProvider>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
             <ReduxProvider>
               {children}
               <Toaster />

@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { ModeToggle } from "@/components/ui/theme-toggle";
 
 export default function LandingPage() {
   const [imageError, setImageError] = useState(false);
@@ -35,6 +36,10 @@ export default function LandingPage() {
             </Link>
           </nav>
           <div className="flex items-center gap-4">
+            {/* Theme Toggle */}
+            <div className="mr-1">
+              <ModeToggle />
+            </div>
             <Link href="/auth/signin">
               <Button variant="outline" size="sm">
                 Sign In
@@ -100,14 +105,14 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Features Section - Updated with improved contrast */}
       <section className="bg-slate-50 dark:bg-slate-900 py-20">
         <div className="container">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4 text-foreground">
               Everything agencies need to deliver exceptional SEO results
             </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            <p className="text-xl text-high-contrast max-w-3xl mx-auto">
               Designed with agency workflows in mind, SEOmaster helps you manage multiple clients
               and deliver measurable results.
             </p>
@@ -122,7 +127,7 @@ export default function LandingPage() {
                 </svg>
               </div>
               <h3 className="text-lg font-bold mb-2 text-foreground">Site Auditing & Monitoring</h3>
-              <p className="text-muted-foreground">
+              <p className="text-high-contrast dark:text-medium-contrast-dark">
                 Comprehensive technical SEO audits with actionable recommendations.
                 Monitor site health 24/7 with automated alerts.
               </p>
@@ -136,7 +141,7 @@ export default function LandingPage() {
                 </svg>
               </div>
               <h3 className="text-lg font-bold mb-2 text-foreground">Rank Tracking</h3>
-              <p className="text-muted-foreground">
+              <p className="text-high-contrast dark:text-medium-contrast-dark">
                 Track keyword rankings across different locations and devices.
                 Monitor competitors and identify ranking opportunities.
               </p>
@@ -150,7 +155,7 @@ export default function LandingPage() {
                 </svg>
               </div>
               <h3 className="text-lg font-bold mb-2 text-foreground">Backlink Analysis</h3>
-              <p className="text-muted-foreground">
+              <p className="text-high-contrast dark:text-medium-contrast-dark">
                 Discover and analyze your backlink profile. Monitor new and lost links
                 and compare against competitors.
               </p>
@@ -159,11 +164,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Agency-specific features section */}
+      {/* Agency-specific features section - Updated with improved contrast */}
       <section className="container py-20">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">Built for Agencies</h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+          <h2 className="text-3xl font-bold mb-4 text-foreground">Built for Agencies</h2>
+          <p className="text-xl text-high-contrast dark:text-medium-contrast-dark max-w-3xl mx-auto">
             Features designed specifically for digital marketing agencies and consultants.
           </p>
         </div>
@@ -177,8 +182,8 @@ export default function LandingPage() {
               </svg>
             </div>
             <div>
-              <h3 className="text-lg font-bold mb-2">White-Label Reports</h3>
-              <p className="text-muted-foreground">
+              <h3 className="text-lg font-bold mb-2 text-foreground">White-Label Reports</h3>
+              <p className="text-high-contrast dark:text-medium-contrast-dark">
                 Customize reports with your agency's branding. Deliver professional
                 PDF reports that showcase your work to clients.
               </p>
@@ -193,8 +198,8 @@ export default function LandingPage() {
               </svg>
             </div>
             <div>
-              <h3 className="text-lg font-bold mb-2">Client Portal</h3>
-              <p className="text-muted-foreground">
+              <h3 className="text-lg font-bold mb-2 text-foreground">Client Portal</h3>
+              <p className="text-high-contrast dark:text-medium-contrast-dark">
                 Give clients direct access to their results with customizable 
                 permission levels and your agency's branding.
               </p>
@@ -209,8 +214,8 @@ export default function LandingPage() {
               </svg>
             </div>
             <div>
-              <h3 className="text-lg font-bold mb-2">Bulk Actions</h3>
-              <p className="text-muted-foreground">
+              <h3 className="text-lg font-bold mb-2 text-foreground">Bulk Actions</h3>
+              <p className="text-high-contrast dark:text-medium-contrast-dark">
                 Save time with bulk actions across multiple client projects.
                 Generate reports, start audits, or add keywords to multiple sites at once.
               </p>
@@ -225,8 +230,8 @@ export default function LandingPage() {
               </svg>
             </div>
             <div>
-              <h3 className="text-lg font-bold mb-2">Team Management</h3>
-              <p className="text-muted-foreground">
+              <h3 className="text-lg font-bold mb-2 text-foreground">Team Management</h3>
+              <p className="text-high-contrast dark:text-medium-contrast-dark">
                 Add team members with customized access levels. Track
                 work and collaborate efficiently on client projects.
               </p>
