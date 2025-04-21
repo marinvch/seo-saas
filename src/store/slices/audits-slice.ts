@@ -1,161 +1,262 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { AuditStatus } from '@prisma/client';
+import { AuditResult, PageAuditResult, AuditOptions } from '@/types/audit-types';
 
-export interface Audit {
-  id: string;
-  projectId: string;
-  status: AuditStatus;
-  score?: number | null;
-  issuesFound?: number | null;
-  criticalIssues?: number | null;
-  startedAt: string;
-  completedAt?: string | null;
-  crawledUrls?: number | null;
-  crawlDepth: number;
-}
-
-export interface AuditResult {
-  auditId: string;
-  results: {
-    meta: {
-      title?: string;
-      description?: string;
-    };
-    performance: {
-      mobile?: number;
-      desktop?: number;
-    };
-    seo: Record<string, any>;
-    accessibility: Record<string, any>;
-    bestPractices: Record<string, any>;
-    issues: Array<{
-      type: string;
-      url: string;
-      description: string;
-      severity: 'critical' | 'major' | 'minor' | 'info';
-      recommendation?: string;
-    }>;
-  };
-}
-
-interface AuditsState {
-  audits: Audit[];
-  auditResults: Record<string, AuditResult>;
-  currentAudit: Audit | null;
-  isLoading: boolean;
+interface AuditState {
+  audits: Record<string, AuditResult[]>; // projectId -> audit results array
+  currentAudit: AuditResult | null;
+  status: 'idle' | 'loading' | 'succeeded' | 'failed';
   error: string | null;
 }
 
-const initialState: AuditsState = {
-  audits: [],
-  auditResults: {},
+const initialState: AuditState = {
+  audits: {},
   currentAudit: null,
-  isLoading: false,
+  status: 'idle',
   error: null,
 };
 
-export const fetchAudits = createAsyncThunk(
-  'audits/fetchAudits',
-  async (projectId: string, { rejectWithValue }) => {
-    try {
-      const response = await fetch(`/api/projects/${projectId}/audits`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch audits');
-      }
-      return await response.json();
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+// Async thunks for API calls
+export const fetchProjectAudits = createAsyncThunk(
+  'audits/fetchProjectAudits',
+  async (projectId: string) => {
+    const response = await fetch(`/api/projects/${projectId}/audits`);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to fetch audits');
     }
+    
+    return await response.json() as AuditResult[];
   }
 );
 
-export const fetchAuditResults = createAsyncThunk(
-  'audits/fetchAuditResults',
-  async (auditId: string, { rejectWithValue }) => {
-    try {
-      const response = await fetch(`/api/audits/${auditId}/results`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch audit results');
-      }
-      const data = await response.json();
-      return { auditId, results: data };
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+export const fetchAuditById = createAsyncThunk(
+  'audits/fetchAuditById',
+  async ({ projectId, auditId }: { projectId: string; auditId: string }) => {
+    const response = await fetch(`/api/projects/${projectId}/audits/${auditId}`);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to fetch audit');
     }
+    
+    return await response.json() as AuditResult;
   }
 );
 
 export const startNewAudit = createAsyncThunk(
   'audits/startNewAudit',
-  async ({ projectId, options }: { projectId: string; options: { crawlDepth: number } }, { rejectWithValue }) => {
-    try {
-      const response = await fetch(`/api/projects/${projectId}/audits`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(options),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to start audit');
-      }
-      
-      return await response.json();
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+  async ({ projectId, options }: { projectId: string; options: AuditOptions }) => {
+    const response = await fetch(`/api/projects/${projectId}/audits`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(options),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to start audit');
     }
+    
+    const data = await response.json();
+    return { auditId: data.auditId as string, projectId };
   }
 );
 
-export const auditsSlice = createSlice({
+export const restartAudit = createAsyncThunk(
+  'audits/restartAudit',
+  async ({ projectId, auditId }: { projectId: string; auditId: string }) => {
+    const response = await fetch(`/api/projects/${projectId}/audits/${auditId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ action: 'restart' }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to restart audit');
+    }
+    
+    return await response.json();
+  }
+);
+
+export const deleteAudit = createAsyncThunk(
+  'audits/deleteAudit',
+  async ({ projectId, auditId }: { projectId: string; auditId: string }) => {
+    const response = await fetch(`/api/projects/${projectId}/audits/${auditId}`, {
+      method: 'DELETE',
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to delete audit');
+    }
+    
+    return auditId;
+  }
+);
+
+// Create the slice
+const auditsSlice = createSlice({
   name: 'audits',
   initialState,
   reducers: {
-    setCurrentAudit: (state, action: PayloadAction<string>) => {
-      state.currentAudit = state.audits.find(audit => audit.id === action.payload) || null;
-    },
     clearCurrentAudit: (state) => {
       state.currentAudit = null;
     },
-    updateAuditStatus: (state, action: PayloadAction<{ id: string; status: AuditStatus }>) => {
-      const { id, status } = action.payload;
-      const audit = state.audits.find(a => a.id === id);
-      if (audit) {
-        audit.status = status;
-        if (status === 'COMPLETED') {
-          audit.completedAt = new Date().toISOString();
+    // Updated to handle enum status from Prisma
+    updateAudit: (state, action: PayloadAction<any>) => {
+      const audit = action.payload;
+      
+      if (!audit || !audit.id) return;
+      
+      // Update current audit if it's the same one
+      if (state.currentAudit && state.currentAudit.id === audit.id) {
+        state.currentAudit = {
+          ...state.currentAudit,
+          ...audit,
+        };
+      }
+      
+      // Update in the project audits map
+      for (const projectId in state.audits) {
+        const audits = state.audits[projectId];
+        const auditIndex = audits.findIndex(a => a.id === audit.id);
+        
+        if (auditIndex !== -1) {
+          state.audits[projectId][auditIndex] = {
+            ...state.audits[projectId][auditIndex],
+            ...audit,
+          };
+          break;
+        }
+      }
+    },
+    updateAuditProgress: (state, action: PayloadAction<{ auditId: string; progress: number }>) => {
+      const { auditId, progress } = action.payload;
+      
+      // Update current audit if it's the same one
+      if (state.currentAudit && state.currentAudit.id === auditId) {
+        state.currentAudit.progressPercentage = progress;
+      }
+      
+      // Update in the project audits map
+      for (const projectId in state.audits) {
+        const audits = state.audits[projectId];
+        const auditIndex = audits.findIndex(a => a.id === auditId);
+        
+        if (auditIndex !== -1) {
+          state.audits[projectId][auditIndex].progressPercentage = progress;
+          break;
         }
       }
     },
   },
   extraReducers: (builder) => {
-    builder
-      .addCase(fetchAudits.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(fetchAudits.fulfilled, (state, action: PayloadAction<Audit[]>) => {
-        state.isLoading = false;
-        state.audits = action.payload;
-      })
-      .addCase(fetchAudits.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string;
-      })
-      .addCase(fetchAuditResults.fulfilled, (state, action) => {
-        const { auditId, results } = action.payload;
-        state.auditResults[auditId] = {
-          auditId,
-          results,
-        };
-      })
-      .addCase(startNewAudit.fulfilled, (state, action: PayloadAction<Audit>) => {
-        state.audits.unshift(action.payload);
-        state.currentAudit = action.payload;
-      });
+    // Handle fetchProjectAudits
+    builder.addCase(fetchProjectAudits.pending, (state) => {
+      state.status = 'loading';
+      state.error = null;
+    });
+    builder.addCase(fetchProjectAudits.fulfilled, (state, action) => {
+      state.status = 'succeeded';
+      // Store audits by project ID
+      state.audits[action.meta.arg] = action.payload;
+    });
+    builder.addCase(fetchProjectAudits.rejected, (state, action) => {
+      state.status = 'failed';
+      state.error = action.error.message || 'Failed to fetch audits';
+    });
+    
+    // Handle fetchAuditById
+    builder.addCase(fetchAuditById.pending, (state) => {
+      state.status = 'loading';
+      state.error = null;
+    });
+    builder.addCase(fetchAuditById.fulfilled, (state, action) => {
+      state.status = 'succeeded';
+      state.currentAudit = action.payload;
+    });
+    builder.addCase(fetchAuditById.rejected, (state, action) => {
+      state.status = 'failed';
+      state.error = action.error.message || 'Failed to fetch audit';
+    });
+    
+    // Handle startNewAudit
+    builder.addCase(startNewAudit.pending, (state) => {
+      state.status = 'loading';
+      state.error = null;
+    });
+    builder.addCase(startNewAudit.fulfilled, (state, action) => {
+      state.status = 'succeeded';
+      // After starting an audit, fetch it to update the state properly
+      // The actual audit data will be populated by subsequent calls
+    });
+    builder.addCase(startNewAudit.rejected, (state, action) => {
+      state.status = 'failed';
+      state.error = action.error.message || 'Failed to start audit';
+    });
+    
+    // Handle restartAudit
+    builder.addCase(restartAudit.pending, (state) => {
+      state.status = 'loading';
+      state.error = null;
+    });
+    builder.addCase(restartAudit.fulfilled, (state, action) => {
+      state.status = 'succeeded';
+      // If we have the current audit, update its status to PENDING
+      if (state.currentAudit && state.currentAudit.id === action.meta.arg.auditId) {
+        state.currentAudit.status = 'pending';
+        state.currentAudit.progressPercentage = 0;
+      }
+      
+      // Update the audit in the project audits list
+      const { projectId, auditId } = action.meta.arg;
+      if (state.audits[projectId]) {
+        const auditIndex = state.audits[projectId].findIndex(a => a.id === auditId);
+        if (auditIndex !== -1) {
+          state.audits[projectId][auditIndex].status = 'pending';
+          state.audits[projectId][auditIndex].progressPercentage = 0;
+        }
+      }
+    });
+    builder.addCase(restartAudit.rejected, (state, action) => {
+      state.status = 'failed';
+      state.error = action.error.message || 'Failed to restart audit';
+    });
+    
+    // Handle deleteAudit
+    builder.addCase(deleteAudit.pending, (state) => {
+      state.status = 'loading';
+      state.error = null;
+    });
+    builder.addCase(deleteAudit.fulfilled, (state, action) => {
+      state.status = 'succeeded';
+      const deletedAuditId = action.payload;
+      
+      // Remove from current audit if it matches
+      if (state.currentAudit && state.currentAudit.id === deletedAuditId) {
+        state.currentAudit = null;
+      }
+      
+      // Remove from audits map
+      for (const projectId in state.audits) {
+        state.audits[projectId] = state.audits[projectId].filter(
+          audit => audit.id !== deletedAuditId
+        );
+      }
+    });
+    builder.addCase(deleteAudit.rejected, (state, action) => {
+      state.status = 'failed';
+      state.error = action.error.message || 'Failed to delete audit';
+    });
   },
 });
 
-export const { setCurrentAudit, clearCurrentAudit, updateAuditStatus } = auditsSlice.actions;
-export const auditsReducer = auditsSlice.reducer;
+export const { clearCurrentAudit, updateAudit, updateAuditProgress } = auditsSlice.actions;
+export default auditsSlice.reducer;

@@ -186,6 +186,8 @@ model Project {
   @@index([organizationId])
   @@index([createdById])
   @@index([url])
+  AuditSchedule AuditSchedule[]
+  AuditHistory AuditHistory[]
 }
 
 model ProjectSettings {
@@ -202,21 +204,52 @@ model ProjectSettings {
 model SiteAudit {
   id              String      @id @default(uuid())
   projectId       String
+  siteUrl         String
   status          AuditStatus @default(PENDING)
-  score           Float?
-  issuesFound     Int?
-  criticalIssues  Int?
   startedAt       DateTime    @default(now())
   completedAt     DateTime?
-  crawledUrls     Int?
-  crawlDepth      Int         @default(3)
-  results         Json?
-  screenshots     Json?
-  htmlReport      String?
-  executedById    String?
+  totalPages      Int         @default(0)
+  options         Json        // Store the audit options
+  pageResults     Json?       // Store the detailed page results
+  issuesSummary   Json        // Store the summary of issues
+  errorMessage    String?     // Store error message if audit fails
+  htmlReport      String?     // Path to generated HTML report
   project         Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  auditHistory    AuditHistory[]
 
   @@index([projectId])
+  @@index([status])
+}
+
+model AuditHistory {
+  id              String    @id @default(uuid())
+  projectId       String
+  auditId         String
+  createdAt       DateTime  @default(now())
+  totalPages      Int
+  issuesSummary   Json
+  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  audit           SiteAudit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([auditId])
+}
+
+model AuditSchedule {
+  id              String    @id @default(uuid())
+  projectId       String
+  frequency       String    // daily, weekly, monthly
+  lastRunAt       DateTime?
+  nextRunAt       DateTime
+  isActive        Boolean   @default(true)
+  options         Json      // Same options structure as AuditOptions
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([nextRunAt])
+  @@index([isActive])
 }
 
 model Keyword {

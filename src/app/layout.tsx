@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { ReduxProvider } from "@/store/redux-provider";
+import { ServiceInitializer } from "@/components/providers/service-initializer";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -30,6 +31,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <ReduxProvider>
+              <ServiceInitializer />
               {children}
               <Toaster />
             </ReduxProvider>
