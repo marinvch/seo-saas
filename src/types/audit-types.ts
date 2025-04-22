@@ -25,6 +25,10 @@ export interface AuditOptions {
   followPatterns?: UrlPattern[];
   ignorePatterns?: UrlPattern[];
   userAgent?: string;
+  checkBrokenLinks?: boolean;
+  checkMobileFriendliness?: boolean;
+  checkPerformance?: boolean;
+  useJavascript?: boolean;
 }
 
 /**

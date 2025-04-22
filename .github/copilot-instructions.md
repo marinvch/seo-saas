@@ -4,10 +4,30 @@
 
 ### 1.1 Project Overview & Goals
 
-- Build a subscription-based, all-in-one SEO platform tailored for digital agencies.
+- Build a subscription-based, all-in-one SEO platform tailored for digital agencies when build use Context7 MCP for the project.
+- Only use libaries that are compatible with Next.js 14 and the App Router.
+- Provide a user-friendly interface for SEO professionals to manage multiple clients and projects efficiently.
+- For ui use Shadcn/ui MCP server.
+- Integrate with popular SEO tools (Google Search Console, Google Analytics) for seamless data access.
+- Offer AI-driven insights and recommendations to enhance SEO strategies with free Gemini 1.5 flash.
+- Ensure a scalable architecture to accommodate future growth and feature expansion.
+- Focus on performance, security, and user experience to maintain a competitive edge in the market.
+- Provide a robust API for third-party integrations and custom solutions.
+- Implement a subscription model with tiered pricing based on features and usage.
 - Streamline SEO workflows with integrated tools.
 - Utilize AI for SEO assistance (content, audits, insights).
 - Support multi-project, team-based collaboration for agencies.
+- Enhance reporting features with customizable dashboards.
+- Ensure data privacy and compliance with regulations (GDPR, CCPA).
+- Provide comprehensive documentation and support for users.
+- Implement a feedback loop for continuous improvement based on user input.
+- Focus on performance and scalability to handle large datasets and multiple users.
+- Ensure a responsive design for accessibility across devices.
+- Log issues and fixed based on latest documentation and best practices.
+- Use a modular architecture to allow for easy addition of new features and integrations.
+- Implement user feedback mechanisms to continuously improve the platform.
+- Ensure the platform is built with a focus on user experience, making it intuitive and easy to navigate.
+- Provide a robust API for third-party integrations and custom solutions.
 
 ### 1.2 Target Audience
 

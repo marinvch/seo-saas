@@ -55,22 +55,22 @@ enum RankTrackingFrequency {
 
 // Models
 model User {
-  id                String              @id @default(uuid())
-  name              String?
-  email             String              @unique
-  emailVerified     DateTime?
-  password          String?
-  image             String?
-  role              Role                @default(USER)
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  stripeCustomerId  String?             @unique
-  accounts          Account[]
-  sessions          Session[]
-  organizations     OrganizationUser[]
-  projects          Project[]
-  notifications     Notification[]
-  apiKeys           ApiKey[]
+  id               String             @id @default(uuid())
+  name             String?
+  email            String             @unique
+  emailVerified    DateTime?
+  password         String?
+  image            String?
+  role             Role               @default(USER)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  stripeCustomerId String?            @unique
+  accounts         Account[]
+  sessions         Session[]
+  organizations    OrganizationUser[]
+  projects         Project[]
+  notifications    Notification[]
+  apiKeys          ApiKey[]
 }
 
 model Account {
@@ -103,18 +103,18 @@ model Session {
 }
 
 model Organization {
-  id                String             @id @default(uuid())
-  name              String
-  slug              String             @unique
-  logo              String?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  stripeCustomerId  String?            @unique
-  users             OrganizationUser[]
-  projects          Project[]
-  subscription      Subscription?
-  brandingSettings  BrandingSettings?
-  apiKeys           ApiKey[]
+  id               String             @id @default(uuid())
+  name             String
+  slug             String             @unique
+  logo             String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  stripeCustomerId String?            @unique
+  users            OrganizationUser[]
+  projects         Project[]
+  subscription     Subscription?
+  brandingSettings BrandingSettings?
+  apiKeys          ApiKey[]
 }
 
 model OrganizationUser {
@@ -131,18 +131,18 @@ model OrganizationUser {
 }
 
 model BrandingSettings {
-  id                 String       @id @default(uuid())
-  organizationId     String       @unique
-  primaryColor       String       @default("#3b82f6")
-  secondaryColor     String       @default("#10b981")
-  accentColor        String       @default("#f59e0b")
-  logoUrl            String?
-  favicon            String?
-  customDomain       String?
-  whitelabelReports  Boolean      @default(false)
-  emailTemplates     Boolean      @default(false)
-  clientPortal       Boolean      @default(false)
-  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id                String       @id @default(uuid())
+  organizationId    String       @unique
+  primaryColor      String       @default("#3b82f6")
+  secondaryColor    String       @default("#10b981")
+  accentColor       String       @default("#f59e0b")
+  logoUrl           String?
+  favicon           String?
+  customDomain      String?
+  whitelabelReports Boolean      @default(false)
+  emailTemplates    Boolean      @default(false)
+  clientPortal      Boolean      @default(false)
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
 
 model Subscription {
@@ -161,18 +161,18 @@ model Subscription {
 }
 
 model Project {
-  id                   String               @id @default(uuid())
+  id                   String                @id @default(uuid())
   name                 String
   url                  String
-  type                 ProjectType          @default(WEBSITE)
+  type                 ProjectType           @default(WEBSITE)
   organizationId       String
   createdById          String
   targetCountry        String?
   targetLanguage       String?
-  createdAt            DateTime             @default(now())
-  updatedAt            DateTime             @updatedAt
-  organization         Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  createdBy            User                 @relation(fields: [createdById], references: [id])
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  organization         Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy            User                  @relation(fields: [createdById], references: [id])
   siteAudits           SiteAudit[]
   keywords             Keyword[]
   rankTracking         RankTracking[]
@@ -182,70 +182,71 @@ model Project {
   projectSettings      ProjectSettings?
   onPageAnalyses       OnPageAnalysis[]
   performanceSnapshots PerformanceSnapshot[]
+  AuditSchedule        AuditSchedule[]
+  AuditHistory         AuditHistory[]
 
   @@index([organizationId])
   @@index([createdById])
   @@index([url])
-  AuditSchedule AuditSchedule[]
-  AuditHistory AuditHistory[]
 }
 
 model ProjectSettings {
-  id                 String             @id @default(uuid())
-  projectId          String             @unique
+  id                 String                @id @default(uuid())
+  projectId          String                @unique
   rankTrackingFreq   RankTrackingFrequency @default(WEEKLY)
   autoAuditFrequency RankTrackingFrequency @default(WEEKLY)
-  emailAlerts        Boolean            @default(true)
+  emailAlerts        Boolean               @default(true)
   slackWebhookUrl    String?
   integrations       Json?
-  project            Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project            Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 model SiteAudit {
-  id              String      @id @default(uuid())
-  projectId       String
-  siteUrl         String
-  status          AuditStatus @default(PENDING)
-  startedAt       DateTime    @default(now())
-  completedAt     DateTime?
-  totalPages      Int         @default(0)
-  options         Json        // Store the audit options
-  pageResults     Json?       // Store the detailed page results
-  issuesSummary   Json        // Store the summary of issues
-  errorMessage    String?     // Store error message if audit fails
-  htmlReport      String?     // Path to generated HTML report
-  project         Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  auditHistory    AuditHistory[]
+  id            String         @id @default(uuid())
+  projectId     String
+  siteUrl       String
+  status        AuditStatus    @default(PENDING)
+  startedAt     DateTime       @default(now())
+  completedAt   DateTime?
+  totalPages    Int            @default(0)
+  progressPercentage Int?      // Stores the current progress (0-100)
+  options       Json // Store the audit options
+  pageResults   Json? // Store the detailed page results
+  issuesSummary Json // Store the summary of issues
+  errorMessage  String? // Store error message if audit fails
+  htmlReport    String? // Path to generated HTML report
+  project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  auditHistory  AuditHistory[]
 
   @@index([projectId])
   @@index([status])
 }
 
 model AuditHistory {
-  id              String    @id @default(uuid())
-  projectId       String
-  auditId         String
-  createdAt       DateTime  @default(now())
-  totalPages      Int
-  issuesSummary   Json
-  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  audit           SiteAudit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  id            String    @id @default(uuid())
+  projectId     String
+  auditId       String
+  createdAt     DateTime  @default(now())
+  totalPages    Int
+  issuesSummary Json
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  audit         SiteAudit @relation(fields: [auditId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
   @@index([auditId])
 }
 
 model AuditSchedule {
-  id              String    @id @default(uuid())
-  projectId       String
-  frequency       String    // daily, weekly, monthly
-  lastRunAt       DateTime?
-  nextRunAt       DateTime
-  isActive        Boolean   @default(true)
-  options         Json      // Same options structure as AuditOptions
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id        String    @id @default(uuid())
+  projectId String
+  frequency String
+  lastRunAt DateTime?
+  nextRunAt DateTime
+  isActive  Boolean   @default(true)
+  options   Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
   @@index([nextRunAt])
@@ -253,33 +254,33 @@ model AuditSchedule {
 }
 
 model Keyword {
-  id              String        @id @default(uuid())
-  projectId       String
-  keyword         String
-  volume          Int?
-  difficulty      Float?
-  cpc             Float?
-  intent          String?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  project         Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  rankTracking    RankTracking[]
+  id           String         @id @default(uuid())
+  projectId    String
+  keyword      String
+  volume       Int?
+  difficulty   Float?
+  cpc          Float?
+  intent       String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  rankTracking RankTracking[]
 
   @@index([projectId])
 }
 
 model RankTracking {
-  id              String      @id @default(uuid())
-  projectId       String
-  keywordId       String
-  rank            Int?
-  previousRank    Int?
-  change          Int?        // Positive or negative change
-  url             String?
-  date            DateTime    @default(now())
-  searchEngine    String      @default("google")
-  project         Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  keyword         Keyword     @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+  id           String   @id @default(uuid())
+  projectId    String
+  keywordId    String
+  rank         Int?
+  previousRank Int?
+  change       Int? // Positive or negative change
+  url          String?
+  date         DateTime @default(now())
+  searchEngine String   @default("google")
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  keyword      Keyword  @relation(fields: [keywordId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
   @@index([keywordId])
@@ -287,26 +288,26 @@ model RankTracking {
 }
 
 model ContentAudit {
-  id              String      @id @default(uuid())
-  projectId       String
-  url             String
-  title           String?
-  wordCount       Int?
+  id               String      @id @default(uuid())
+  projectId        String
+  url              String
+  title            String?
+  wordCount        Int?
   readabilityScore Float?
-  seoScore        Float?
-  recommendations Json?
-  screenshot      String?
-  status          AuditStatus @default(PENDING)
-  createdAt       DateTime    @default(now())
-  completedAt     DateTime?
-  project         Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  seoScore         Float?
+  recommendations  Json?
+  screenshot       String?
+  status           AuditStatus @default(PENDING)
+  createdAt        DateTime    @default(now())
+  completedAt      DateTime?
+  project          Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
   @@index([url])
 }
 
 model OnPageAnalysis {
-  id              String      @id @default(uuid())
+  id              String   @id @default(uuid())
   projectId       String
   url             String
   title           String?
@@ -320,26 +321,26 @@ model OnPageAnalysis {
   missingAltText  Int?
   score           Float?
   recommendations Json?
-  createdAt       DateTime    @default(now())
-  project         Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
   @@index([url])
 }
 
 model Backlink {
-  id              String      @id @default(uuid())
+  id              String   @id @default(uuid())
   projectId       String
   sourceUrl       String
   targetUrl       String
   anchorText      String?
-  dofollow        Boolean     @default(true)
+  dofollow        Boolean  @default(true)
   domainAuthority Float?
   pageAuthority   Float?
-  firstDiscovered DateTime    @default(now())
-  lastChecked     DateTime    @default(now())
-  status          String      @default("ACTIVE")  // ACTIVE, LOST, NEW
-  project         Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  firstDiscovered DateTime @default(now())
+  lastChecked     DateTime @default(now())
+  status          String   @default("ACTIVE") // ACTIVE, LOST, NEW
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
   @@index([sourceUrl])
@@ -347,47 +348,47 @@ model Backlink {
 }
 
 model Competitor {
-  id              String      @id @default(uuid())
+  id              String   @id @default(uuid())
   projectId       String
   name            String
   url             String
   keywordsOverlap Int?
   metrics         Json?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  project         Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
   @@index([url])
 }
 
 model PerformanceSnapshot {
-  id              String      @id @default(uuid())
-  projectId       String
-  date            DateTime    @default(now())
-  mobileScore     Float?
-  desktopScore    Float?
-  lcp             Float?      // Largest Contentful Paint
-  fid             Float?      // First Input Delay
-  cls             Float?      // Cumulative Layout Shift
-  ttfb            Float?      // Time to First Byte
-  metrics         Json?
-  project         Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id           String   @id @default(uuid())
+  projectId    String
+  date         DateTime @default(now())
+  mobileScore  Float?
+  desktopScore Float?
+  lcp          Float? // Largest Contentful Paint
+  fid          Float? // First Input Delay
+  cls          Float? // Cumulative Layout Shift
+  ttfb         Float? // Time to First Byte
+  metrics      Json?
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
   @@index([date])
 }
 
 model Notification {
-  id              String      @id @default(uuid())
-  userId          String
-  title           String
-  message         String
-  read            Boolean     @default(false)
-  type            String      @default("INFO")  // INFO, WARNING, ERROR, SUCCESS
-  link            String?
-  createdAt       DateTime    @default(now())
-  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  type      String   @default("INFO") // INFO, WARNING, ERROR, SUCCESS
+  link      String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([read])
@@ -395,16 +396,16 @@ model Notification {
 }
 
 model ApiKey {
-  id              String      @id @default(uuid())
-  name            String
-  key             String      @unique
-  organizationId  String?
-  userId          String?
-  createdAt       DateTime    @default(now())
-  expiresAt       DateTime?
-  lastUsed        DateTime?
-  organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user            User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String        @id @default(uuid())
+  name           String
+  key            String        @unique
+  organizationId String?
+  userId         String?
+  createdAt      DateTime      @default(now())
+  expiresAt      DateTime?
+  lastUsed       DateTime?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([userId])

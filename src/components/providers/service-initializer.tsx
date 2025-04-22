@@ -1,25 +1,23 @@
-'use server';
+"use client";
 
-import { initServices } from '@/lib/init-services';
+import { useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { initServices } from "@/lib/init-services";
 
 /**
- * This is a server component that initializes background services
- * It should be included in the root layout.tsx to start services when the app starts
+ * ServiceInitializer component
+ * Initializes application services when the app loads
+ * Only runs initialization once the user is authenticated
  */
-export async function ServiceInitializer() {
-  try {
-    // Only run initialization in production or when explicitly enabled
-    if (
-      process.env.NODE_ENV === 'production' || 
-      process.env.ENABLE_BACKGROUND_SERVICES === 'true'
-    ) {
-      await initServices();
+export function ServiceInitializer() {
+  const { status } = useSession();
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      // Initialize services only when authenticated
+      initServices();
     }
-  } catch (error) {
-    console.error('Failed to initialize services:', error);
-    // Don't throw, we don't want to break the app rendering
-  }
-  
-  // This component doesn't render anything
+  }, [status]);
+
   return null;
 }

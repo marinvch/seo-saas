@@ -1,475 +1,310 @@
-import { Metadata } from "next";
-import Link from "next/link";
-import { getServerSession } from "next-auth";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import ProjectList from "@/components/projects/project-list";
-import { prisma } from "@/lib/db/prisma-client";
+import { LineChart, BarChart3, Search, Globe, Link2, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { formatNumber } from "@/lib/utils";
 
-export const metadata: Metadata = {
-  title: "Dashboard | SEO SaaS",
-  description: "Your SEO performance dashboard"
-};
+interface Project {
+  id: string;
+  name: string;
+  url: string;
+  type: string;
+  organizationId: string;
+}
 
-// Mock data for demo purposes - in a real application these will come from API calls
-const mockMetrics = {
-  totalKeywords: 127,
-  averagePosition: 12.4,
-  keywordsInTop10: 23,
-  crawlErrors: 14,
-  organicTraffic: 2467,
-  organicTrafficChange: 12.3,
-};
+interface DashboardStats {
+  totalProjects: number;
+  totalKeywords: number;
+  totalAudits: number;
+  totalBacklinks: number;
+}
 
-const mockRecentActivity = [
-  { id: 1, type: "rank_change", project: "Agency Website", keyword: "digital marketing agency", oldRank: 12, newRank: 8, date: "2025-04-18T10:30:00Z" },
-  { id: 2, type: "crawl_completed", project: "E-commerce Client", pagesScanned: 237, issuesFound: 16, date: "2025-04-17T15:45:00Z" },
-  { id: 3, type: "keyword_added", project: "SaaS Client", keyword: "project management software", date: "2025-04-16T09:15:00Z" },
-  { id: 4, type: "content_opportunity", project: "Agency Website", keyword: "seo for small business", gap: "Missing H1 tag", date: "2025-04-15T14:20:00Z" },
-];
+export default function DashboardPage() {
+  const { data: session } = useSession();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalProjects: 0,
+    totalKeywords: 0,
+    totalAudits: 0,
+    totalBacklinks: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
 
-export default async function DashboardPage() {
-  // Get user's session
-  const session = await getServerSession();
-  
-  if (!session?.user?.email) {
-    return (
-      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Session expired</h2>
-          <p className="text-muted-foreground mb-4">Please sign in to access your dashboard.</p>
-          <Button asChild>
-            <Link href="/auth/signin">Sign In</Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // Get user's projects
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-    include: {
-      organizations: {
-        include: {
-          organization: true,
+  useEffect(() => {
+    // In a real implementation, this would fetch actual data
+    // For now, we'll simulate loading data
+    const timer = setTimeout(() => {
+      setProjects([
+        {
+          id: "1",
+          name: "Company Website",
+          url: "https://example.com",
+          type: "WEBSITE",
+          organizationId: "1",
         },
-      },
-    },
-  });
+        {
+          id: "2",
+          name: "E-commerce Store",
+          url: "https://store-example.com",
+          type: "ECOMMERCE",
+          organizationId: "1",
+        },
+      ]);
+      setStats({
+        totalProjects: 2,
+        totalKeywords: 145,
+        totalAudits: 8,
+        totalBacklinks: 382,
+      });
+      setIsLoading(false);
+    }, 1000);
 
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">User not found</h2>
-          <p className="text-muted-foreground mb-4">We couldn't find your account. Please sign in again.</p>
-          <Button asChild>
-            <Link href="/auth/signin">Sign In</Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // Get organization IDs the user belongs to
-  const organizationIds = user.organizations.map(org => org.organizationId);
-
-  // Get projects for these organizations
-  const projects = await prisma.project.findMany({
-    where: {
-      OR: [
-        { organizationId: { in: organizationIds } },
-        { createdById: user.id }
-      ]
-    },
-  });
-
-  // Set greeting based on time of day
-  const hour = new Date().getHours();
-  let greeting = "Good day";
-  if (hour < 12) {
-    greeting = "Good morning";
-  } else if (hour < 18) {
-    greeting = "Good afternoon";
-  } else {
-    greeting = "Good evening";
-  }
-
-  const firstName = user.name?.split(" ")[0] || "there";
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
-    <div className="space-y-8">
-      {/* Header with greeting */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">
-            {greeting}, {firstName}!
-          </h1>
-          <p className="text-muted-foreground">
-            Here's what's happening with your SEO projects today.
-          </p>
-        </div>
-        <div className="mt-4 flex space-x-3 md:mt-0">
-          <Button asChild variant="outline">
-            <Link href="/dashboard/projects/new">
-              Add New Project
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href="/dashboard/keywords/new">
-              Track New Keywords
-            </Link>
-          </Button>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <p className="text-muted-foreground">
+          Welcome back, {session?.user?.name || "User"}
+        </p>
       </div>
 
-      {/* Key metrics section */}
-      <div>
-        <h2 className="mb-4 text-xl font-semibold">Key Metrics</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Project count */}
-          <div className="rounded-lg border bg-white p-4 dark:bg-slate-800">
-            <div className="text-sm font-medium text-muted-foreground">
-              Active Projects
+      {/* Overview Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Total Projects
+            </CardTitle>
+            <Layers className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {isLoading ? (
+                <div className="h-8 w-16 bg-muted animate-pulse rounded" />
+              ) : (
+                stats.totalProjects
+              )}
             </div>
-            <div className="mt-1 flex items-center justify-between">
-              <div className="text-2xl font-bold">
-                {projects.length}
-              </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  className="h-5 w-5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-                  />
-                </svg>
-              </div>
-            </div>
-          </div>
+            <p className="text-xs text-muted-foreground">
+              Active websites being tracked
+            </p>
+          </CardContent>
+        </Card>
 
-          {/* Keywords */}
-          <div className="rounded-lg border bg-white p-4 dark:bg-slate-800">
-            <div className="text-sm font-medium text-muted-foreground">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
               Keywords Tracked
+            </CardTitle>
+            <Search className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {isLoading ? (
+                <div className="h-8 w-16 bg-muted animate-pulse rounded" />
+              ) : (
+                formatNumber(stats.totalKeywords)
+              )}
             </div>
-            <div className="mt-1 flex items-center justify-between">
-              <div className="text-2xl font-bold">
-                {mockMetrics.totalKeywords}
-              </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  className="h-5 w-5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M7 11l5-5m0 0l5 5m-5-5v12"
-                  />
-                </svg>
-              </div>
-            </div>
-            <div className="mt-1 text-xs text-muted-foreground">
-              <span className="text-green-500 font-medium">
-                {mockMetrics.keywordsInTop10}
-              </span>{" "}
-              in top 10 positions
-            </div>
-          </div>
+            <p className="text-xs text-muted-foreground">
+              +7 new keywords this month
+            </p>
+          </CardContent>
+        </Card>
 
-          {/* Average rank */}
-          <div className="rounded-lg border bg-white p-4 dark:bg-slate-800">
-            <div className="text-sm font-medium text-muted-foreground">
-              Average Position
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Site Audits</CardTitle>
+            <Globe className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {isLoading ? (
+                <div className="h-8 w-16 bg-muted animate-pulse rounded" />
+              ) : (
+                stats.totalAudits
+              )}
             </div>
-            <div className="mt-1 flex items-center justify-between">
-              <div className="text-2xl font-bold">
-                {mockMetrics.averagePosition}
-              </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  className="h-5 w-5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                  />
-                </svg>
-              </div>
-            </div>
-          </div>
+            <p className="text-xs text-muted-foreground">
+              Last audit 2 days ago
+            </p>
+          </CardContent>
+        </Card>
 
-          {/* Organic traffic */}
-          <div className="rounded-lg border bg-white p-4 dark:bg-slate-800">
-            <div className="text-sm font-medium text-muted-foreground">
-              Monthly Organic Traffic
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Backlinks Monitored
+            </CardTitle>
+            <Link2 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {isLoading ? (
+                <div className="h-8 w-16 bg-muted animate-pulse rounded" />
+              ) : (
+                formatNumber(stats.totalBacklinks)
+              )}
             </div>
-            <div className="mt-1 flex items-center justify-between">
-              <div className="text-2xl font-bold">
-                {mockMetrics.organicTraffic.toLocaleString()}
-              </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900 dark:text-amber-300">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  className="h-5 w-5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 8l4 4m0 0l-4 4m4-4H3"
-                  />
-                </svg>
-              </div>
-            </div>
-            <div className="mt-1 text-xs">
-              <span className="text-green-500 font-medium">
-                +{mockMetrics.organicTrafficChange}%
-              </span>{" "}
-              vs last month
-            </div>
-          </div>
-        </div>
+            <p className="text-xs text-muted-foreground">
+              +23 new backlinks discovered
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Projects Section */}
-      <ProjectList projects={projects} />
+      <Tabs defaultValue="projects" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="projects">Projects</TabsTrigger>
+          <TabsTrigger value="reports">Recent Reports</TabsTrigger>
+          <TabsTrigger value="activity">Activity</TabsTrigger>
+        </TabsList>
 
-      {/* Activity section */}
-      <div className="rounded-lg border bg-white p-6 dark:bg-slate-800">
-        <h2 className="mb-4 text-xl font-semibold">Recent Activity</h2>
-        <div className="space-y-4">
-          {mockRecentActivity.map((activity) => (
-            <div
-              key={activity.id}
-              className="border-l-2 border-primary pl-4"
-            >
-              {activity.type === "rank_change" && (
-                <>
-                  <p className="font-medium">
-                    Keyword position change for "{activity.keyword}"
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    From position {activity.oldRank} to{" "}
-                    <span
-                      className={
-                        (activity.oldRank ?? Infinity) > (activity.newRank ?? Infinity)
-                          ? "text-green-500 font-medium"
-                          : "text-red-500 font-medium"
-                      }
-                    >
-                      {activity.newRank}
-                    </span>
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {activity.project} ∙{" "}
-                    {new Date(activity.date).toLocaleDateString()}
-                  </p>
-                </>
-              )}
+        <TabsContent value="projects" className="space-y-4">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {isLoading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardHeader>
+                    <div className="h-5 bg-muted rounded w-3/4 mb-2"></div>
+                    <div className="h-4 bg-muted rounded w-1/2"></div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="h-4 bg-muted rounded"></div>
+                      <div className="h-4 bg-muted rounded"></div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : projects.length > 0 ? (
+              projects.map((project) => (
+                <Card key={project.id}>
+                  <CardHeader>
+                    <CardTitle>{project.name}</CardTitle>
+                    <CardDescription>
+                      {project.type === "ECOMMERCE" ? "E-commerce" : "Website"}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-sm text-muted-foreground">
+                    <p>{project.url}</p>
+                    <div className="mt-4 flex items-center">
+                      <div className="mr-4">
+                        <div className="text-xs text-muted-foreground mb-1">
+                          Keywords
+                        </div>
+                        <div className="font-medium">48</div>
+                      </div>
+                      <div className="mr-4">
+                        <div className="text-xs text-muted-foreground mb-1">
+                          Audits
+                        </div>
+                        <div className="font-medium">3</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground mb-1">
+                          Issues
+                        </div>
+                        <div className="font-medium">12</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Link href={`/dashboard/projects/${project.id}`}>
+                      <Button variant="ghost" size="sm" className="flex items-center">
+                        View Details
+                        <ChevronRight className="ml-1 h-4 w-4" />
+                      </Button>
+                    </Link>
+                  </CardFooter>
+                </Card>
+              ))
+            ) : (
+              <Card className="col-span-full">
+                <CardHeader>
+                  <CardTitle>No projects yet</CardTitle>
+                  <CardDescription>
+                    Create your first project to start tracking SEO performance
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Link href="/dashboard/projects/new">
+                    <Button className="w-full sm:w-auto">
+                      Create Your First Project
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            )}
 
-              {activity.type === "crawl_completed" && (
-                <>
-                  <p className="font-medium">Site audit completed</p>
-                  <p className="text-sm text-muted-foreground">
-                    {activity.pagesScanned} pages scanned,{" "}
-                    <span className="text-amber-500 font-medium">
-                      {activity.issuesFound} issues
-                    </span>{" "}
-                    found
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {activity.project} ∙{" "}
-                    {new Date(activity.date).toLocaleDateString()}
-                  </p>
-                </>
-              )}
+            {/* Add project card */}
+            {projects.length > 0 && (
+              <Card className="border-dashed">
+                <CardHeader>
+                  <CardTitle>Add New Project</CardTitle>
+                  <CardDescription>
+                    Set up a new website to track
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex items-center justify-center py-8">
+                  <Link href="/dashboard/projects/new">
+                    <Button variant="outline" size="lg">
+                      + Add Project
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </TabsContent>
 
-              {activity.type === "keyword_added" && (
-                <>
-                  <p className="font-medium">New keyword added</p>
-                  <p className="text-sm text-muted-foreground">
-                    Now tracking "{activity.keyword}"
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {activity.project} ∙{" "}
-                    {new Date(activity.date).toLocaleDateString()}
-                  </p>
-                </>
-              )}
-
-              {activity.type === "content_opportunity" && (
-                <>
-                  <p className="font-medium">Content opportunity detected</p>
-                  <p className="text-sm text-muted-foreground">
-                    For keyword "{activity.keyword}": {activity.gap}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {activity.project} ∙{" "}
-                    {new Date(activity.date).toLocaleDateString()}
-                  </p>
-                </>
-              )}
-            </div>
-          ))}
-
-          {mockRecentActivity.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="rounded-full bg-slate-100 p-3 dark:bg-slate-700">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  className="h-6 w-6 text-muted-foreground"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
+        <TabsContent value="reports">
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Reports</CardTitle>
+              <CardDescription>
+                View your most recent SEO reports and analyses
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-muted-foreground text-center py-6">
+                No reports generated yet. Run an audit to create your first report.
               </div>
-              <h3 className="mt-4 text-lg font-medium">No recent activity</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Activity will appear here as you use the platform.
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
+            </CardContent>
+            <CardFooter>
+              <Link href="/dashboard/audits/new">
+                <Button>
+                  Run New Audit
+                </Button>
+              </Link>
+            </CardFooter>
+          </Card>
+        </TabsContent>
 
-      {/* Quick actions */}
-      <div>
-        <h2 className="mb-4 text-xl font-semibold">Quick Actions</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          <Link
-            href="/dashboard/projects/new"
-            className="flex flex-col items-center justify-center rounded-lg border bg-white p-6 text-center transition-all hover:border-primary hover:shadow-md dark:bg-slate-800"
-          >
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                className="h-6 w-6"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-                />
-              </svg>
-            </div>
-            <h3 className="text-base font-medium">New Project</h3>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Add a website to track
-            </p>
-          </Link>
-
-          <Link
-            href="/dashboard/audits/new"
-            className="flex flex-col items-center justify-center rounded-lg border bg-white p-6 text-center transition-all hover:border-primary hover:shadow-md dark:bg-slate-800"
-          >
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                className="h-6 w-6"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                />
-              </svg>
-            </div>
-            <h3 className="text-base font-medium">Run Site Audit</h3>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Check your site for SEO issues
-            </p>
-          </Link>
-
-          <Link
-            href="/dashboard/keywords/new"
-            className="flex flex-col items-center justify-center rounded-lg border bg-white p-6 text-center transition-all hover:border-primary hover:shadow-md dark:bg-slate-800"
-          >
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                className="h-6 w-6"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M7 11l5-5m0 0l5 5m-5-5v12"
-                />
-              </svg>
-            </div>
-            <h3 className="text-base font-medium">Add Keywords</h3>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Track new keyword rankings
-            </p>
-          </Link>
-
-          <Link
-            href="/dashboard/reports/generate"
-            className="flex flex-col items-center justify-center rounded-lg border bg-white p-6 text-center transition-all hover:border-primary hover:shadow-md dark:bg-slate-800"
-          >
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                className="h-6 w-6"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-            </div>
-            <h3 className="text-base font-medium">Generate Report</h3>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Create client-ready reports
-            </p>
-          </Link>
-        </div>
-      </div>
+        <TabsContent value="activity">
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+              <CardDescription>
+                Your team's recent actions and events
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-muted-foreground text-center py-6">
+                No recent activity to display
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

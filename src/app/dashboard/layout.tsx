@@ -1,10 +1,44 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  BarChart3,
+  Search,
+  Settings,
+  LineChart,
+  Link2,
+  FileText,
+  Layers,
+  Globe,
+  Users,
+  LogOut,
+  Menu,
+  X,
+  Bell,
+  CreditCard,
+} from "lucide-react";
+import { signOut } from "next-auth/react";
 import { ModeToggle } from "@/components/ui/theme-toggle";
+import { cn } from "@/lib/utils";
+
+interface NavItem {
+  label: string;
+  href: string;
+  icon: React.ReactNode;
+}
 
 export default function DashboardLayout({
   children,
@@ -12,468 +46,187 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { data: session, status } = useSession();
-  const pathname = usePathname();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const router = useRouter();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // If the user is not authenticated, show a loading state
+  // If not authenticated, redirect to login page
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/signin");
+    }
+  }, [status, router]);
+
+  // We're still checking authentication status
   if (status === "loading") {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
   }
 
+  // Authentication check passed, render dashboard
+  const navItems: NavItem[] = [
+    { label: "Overview", href: "/dashboard", icon: <BarChart3 size={20} /> },
+    { label: "Projects", href: "/dashboard/projects", icon: <Layers size={20} /> },
+    { label: "Site Audits", href: "/dashboard/audits", icon: <Globe size={20} /> },
+    { label: "Keywords", href: "/dashboard/keywords", icon: <Search size={20} /> },
+    { label: "Rank Tracking", href: "/dashboard/rank-tracking", icon: <LineChart size={20} /> },
+    { label: "Backlinks", href: "/dashboard/backlinks", icon: <Link2 size={20} /> },
+    { label: "Content Audit", href: "/dashboard/content", icon: <FileText size={20} /> },
+    { label: "Team", href: "/dashboard/team", icon: <Users size={20} /> },
+    { label: "Settings", href: "/dashboard/settings", icon: <Settings size={20} /> },
+  ];
+
+  const closeMobileMenu = () => setMobileMenuOpen(false);
+
+  const initialsFromName = (name?: string | null) => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-      {/* Top navigation bar */}
-      <header className="fixed top-0 left-0 right-0 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 z-30">
-        <div className="flex h-16 items-center justify-between px-4 md:px-6">
-          {/* Left side - Logo and mobile menu button */}
-          <div className="flex items-center">
-            <button 
-              className="mr-4 md:hidden text-slate-800 dark:text-slate-100"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              aria-label="Toggle menu"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                className="h-6 w-6"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            </button>
-            <Link href="/dashboard">
-              <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
+    <div className="flex h-screen bg-background">
+      {/* Mobile menu */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 lg:hidden">
+          <div className="fixed left-0 top-0 h-screen w-4/5 max-w-sm bg-background p-6">
+            <div className="flex items-center justify-between mb-8">
+              <Link href="/dashboard" className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
                 SEOmaster
-              </div>
-            </Link>
-          </div>
-
-          {/* Right side - User menu */}
-          <div className="flex items-center space-x-4">
-            {/* Theme Toggle */}
-            <ModeToggle />
-            
-            {/* Notifications */}
-            <button className="relative p-2 text-slate-800 dark:text-slate-100" aria-label="Notifications">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                className="h-6 w-6"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                />
-              </svg>
-              <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-                3
-              </span>
-            </button>
-
-            {/* User menu */}
-            <div className="relative">
-              <div className="flex items-center space-x-2 cursor-pointer">
-                <div className="h-8 w-8 rounded-full bg-slate-300 dark:bg-slate-700 flex items-center justify-center text-slate-800 dark:text-white">
-                  {session?.user?.image ? (
-                    <img
-                      src={session.user.image}
-                      alt={session.user.name || "User"}
-                      className="h-8 w-8 rounded-full"
-                    />
-                  ) : (
-                    <span className="text-sm font-medium">
-                      {session?.user?.name?.charAt(0) || "U"}
-                    </span>
-                  )}
-                </div>
-                <span className="hidden md:inline text-sm font-medium dark:text-white">
-                  {session?.user?.name || "User"}
-                </span>
-              </div>
+              </Link>
+              <Button variant="ghost" size="icon" onClick={closeMobileMenu}>
+                <X size={20} />
+              </Button>
             </div>
+            <nav className="space-y-6">
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={closeMobileMenu}
+                  className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-accent"
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </Link>
+              ))}
+            </nav>
           </div>
         </div>
-      </header>
+      )}
 
-      {/* Sidebar - Updated with sidebar color variables */}
-      <aside
-        className={`sidebar fixed left-0 top-16 z-20 h-[calc(100vh-4rem)] w-64 transform overflow-y-auto border-r border-sidebar-border bg-sidebar p-4 transition-transform md:translate-x-0 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <nav className="space-y-6">
-          <div>
-            <h3 className="mb-2 text-sm font-medium text-sidebar-muted-foreground">
-              Dashboard
-            </h3>
-            <ul className="space-y-1">
-              <li>
-                <Link
-                  href="/dashboard"
-                  className={`flex items-center space-x-2 rounded px-2 py-2 ${
-                    pathname === "/dashboard"
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent"
-                  }`}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    className="h-5 w-5"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                    />
-                  </svg>
-                  <span>Overview</span>
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-sidebar-muted-foreground">
-                Projects
-              </h3>
-              <Link
-                href="/dashboard/projects/new"
-                className="text-xs text-primary hover:underline"
-              >
-                + Add New
-              </Link>
-            </div>
-            <ul className="space-y-1">
-              {/* Project list would be dynamically generated here */}
-              <li>
-                <Link
-                  href="/dashboard/projects"
-                  className={`flex items-center space-x-2 rounded px-2 py-2 ${
-                    pathname === "/dashboard/projects"
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent"
-                  }`}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    className="h-5 w-5"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-                    />
-                  </svg>
-                  <span>All Projects</span>
-                </Link>
-              </li>
-            </ul>
-          </div>
-          
-          <div>
-            <h3 className="mb-2 text-sm font-medium text-sidebar-muted-foreground">
-              Tools
-            </h3>
-            <ul className="space-y-1">
-              <li>
-                <Link
-                  href="/dashboard/keywords"
-                  className={`flex items-center space-x-2 rounded px-2 py-2 ${
-                    pathname.startsWith("/dashboard/keywords")
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent"
-                  }`}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    className="h-5 w-5"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 11l5-5m0 0l5 5m-5-5v12"
-                    />
-                  </svg>
-                  <span>Keyword Tracking</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/dashboard/audits"
-                  className={`flex items-center space-x-2 rounded px-2 py-2 ${
-                    pathname.startsWith("/dashboard/audits")
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent"
-                  }`}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    className="h-5 w-5"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  <span>Site Audits</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/dashboard/competitors"
-                  className={`flex items-center space-x-2 rounded px-2 py-2 ${
-                    pathname.startsWith("/dashboard/competitors")
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent"
-                  }`}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    className="h-5 w-5"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
-                  <span>Competitor Analysis</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/dashboard/content"
-                  className={`flex items-center space-x-2 rounded px-2 py-2 ${
-                    pathname.startsWith("/dashboard/content")
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent"
-                  }`}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    className="h-5 w-5"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                  <span>Content Optimization</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/dashboard/ai-assistant"
-                  className={`flex items-center space-x-2 rounded px-2 py-2 ${
-                    pathname.startsWith("/dashboard/ai-assistant")
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent"
-                  }`}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    className="h-5 w-5"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
-                  </svg>
-                  <span>AI Assistant</span>
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="mb-2 text-sm font-medium text-sidebar-muted-foreground">
-              Settings
-            </h3>
-            <ul className="space-y-1">
-              <li>
-                <Link
-                  href="/dashboard/settings/organization"
-                  className={`flex items-center space-x-2 rounded px-2 py-2 ${
-                    pathname.startsWith("/dashboard/settings/organization")
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent"
-                  }`}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    className="h-5 w-5"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                    />
-                  </svg>
-                  <span>Organization</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/dashboard/settings/team"
-                  className={`flex items-center space-x-2 rounded px-2 py-2 ${
-                    pathname.startsWith("/dashboard/settings/team")
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent"
-                  }`}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    className="h-5 w-5"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                    />
-                  </svg>
-                  <span>Team Members</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/dashboard/settings/billing"
-                  className={`flex items-center space-x-2 rounded px-2 py-2 ${
-                    pathname.startsWith("/dashboard/settings/billing")
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent"
-                  }`}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    className="h-5 w-5"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                    />
-                  </svg>
-                  <span>Billing</span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/dashboard/settings/integrations"
-                  className={`flex items-center space-x-2 rounded px-2 py-2 ${
-                    pathname.startsWith("/dashboard/settings/integrations")
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent"
-                  }`}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    className="h-5 w-5"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
-                  </svg>
-                  <span>Integrations</span>
-                </Link>
-              </li>
-            </ul>
-          </div>
-          
-          <div className="pt-4 mt-6 border-t border-sidebar-border">
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:flex flex-col w-64 border-r">
+        <div className="flex items-center gap-2 px-6 py-4 border-b h-16">
+          <Link href="/dashboard" className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
+            SEOmaster
+          </Link>
+        </div>
+        <nav className="flex flex-col gap-1 p-4 flex-1 overflow-y-auto">
+          {navItems.map((item) => (
             <Link
-              href="/auth/signin?signout=true"
-              className="flex items-center space-x-2 rounded px-2 py-2 text-red-500 hover:bg-sidebar-accent dark:text-red-400"
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2 rounded-md hover:bg-accent group",
+                item.href === "/dashboard" && "bg-accent"
+              )}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                className="h-5 w-5"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                />
-              </svg>
-              <span>Sign Out</span>
+              <div className="text-muted-foreground group-hover:text-foreground">
+                {item.icon}
+              </div>
+              <span>{item.label}</span>
             </Link>
-          </div>
+          ))}
         </nav>
+        <div className="p-4 border-t">
+          <Button
+            variant="outline"
+            className="w-full flex items-center justify-center gap-2"
+            onClick={() => signOut({ callbackUrl: "/" })}
+          >
+            <LogOut size={16} />
+            Sign Out
+          </Button>
+        </div>
       </aside>
 
-      {/* Main content */}
-      <main className="ml-0 pt-16 md:ml-64">
-        <div className="px-4 py-8 md:px-8">
+      {/* Main content area */}
+      <div className="flex flex-col flex-1 overflow-hidden">
+        {/* Header */}
+        <header className="flex items-center justify-between border-b h-16 px-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
+            onClick={() => setMobileMenuOpen(true)}
+          >
+            <Menu size={20} />
+          </Button>
+
+          <div className="flex items-center ml-auto gap-4">
+            <ModeToggle />
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <Bell size={20} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-80">
+                <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <div className="py-2 px-3 text-sm text-center text-muted-foreground">
+                  No new notifications
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Avatar>
+                    <AvatarImage src={session?.user?.image || ""} />
+                    <AvatarFallback>{initialsFromName(session?.user?.name)}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/profile">Profile</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/settings">Settings</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/billing">
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    <span>Billing</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/" })}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </header>
+
+        {/* Main content */}
+        <main className="flex-1 overflow-y-auto p-6">
           {children}
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

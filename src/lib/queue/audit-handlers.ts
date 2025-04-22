@@ -28,14 +28,25 @@ export function initAuditHandlers() {
       // Log the start of the audit
       console.log(`Starting audit for site ${siteUrl} (Audit ID: ${auditId})`);
 
-      // Update progress to 10%
-      memoryQueue.updateProgress(job.id, 10);
+      // Update audit status to IN_PROGRESS and set initial progress
+      await prisma.siteAudit.update({
+        where: { id: auditId },
+        data: {
+          status: AuditStatus.IN_PROGRESS,
+          progressPercentage: 10,
+        },
+      });
 
       // Create an instance of the crawler service
       const crawlerService = new CrawlerService();
 
-      // Update progress to 20% before crawling
-      memoryQueue.updateProgress(job.id, 20);
+      // Update progress before crawling
+      await prisma.siteAudit.update({
+        where: { id: auditId },
+        data: {
+          progressPercentage: 20,
+        },
+      });
 
       // Start the crawl
       await crawlerService.startCrawl({
@@ -51,12 +62,27 @@ export function initAuditHandlers() {
         ignorePatterns,
         userAgent,
         useJavascript,
+        onProgress: async (progress) => {
+          // Update progress in the database as crawling progresses
+          await prisma.siteAudit.update({
+            where: { id: auditId },
+            data: {
+              progressPercentage: Math.min(20 + Math.floor(progress * 0.75), 95),
+            },
+          });
+        },
       });
 
-      // Update progress to 100% after crawling completes
-      memoryQueue.updateProgress(job.id, 100);
-      console.log(`Audit completed for site ${siteUrl} (Audit ID: ${auditId})`);
+      // Set final progress and completed status
+      await prisma.siteAudit.update({
+        where: { id: auditId },
+        data: {
+          status: AuditStatus.COMPLETED,
+          progressPercentage: 100,
+        },
+      });
 
+      console.log(`Audit completed for site ${siteUrl} (Audit ID: ${auditId})`);
       return { success: true, auditId };
     } catch (error) {
       console.error(`Audit failed for site ${siteUrl} (Audit ID: ${auditId}):`, error);
@@ -67,6 +93,7 @@ export function initAuditHandlers() {
           where: { id: auditId },
           data: {
             status: AuditStatus.FAILED,
+            progressPercentage: 0,
             errorMessage: error instanceof Error ? error.message : 'Unknown error occurred',
           },
         });

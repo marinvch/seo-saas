@@ -1,94 +1,84 @@
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { z } from "zod";
 import { prisma } from "@/lib/db/prisma-client";
+import { auth } from "@/lib/auth";
+import { NextResponse } from "next/server";
 
-// Validation schema
-const projectSchema = z.object({
-  name: z.string().min(3),
-  url: z.string().url(),
-  type: z.enum(["WEBSITE", "BLOG", "ECOMMERCE", "SOCIAL_MEDIA"]),
-  targetCountry: z.string().optional(),
-  targetLanguage: z.string().optional(),
-});
-
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    // Check authentication
-    const session = await getServerSession();
-    
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const session = await auth();
+
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { message: "Unauthorized" },
+        { status: 401 }
+      );
     }
 
-    // Get current user
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email as string },
-      include: {
-        organizations: {
-          include: {
-            organization: true,
-          },
-        },
+    const { name, url, type, organizationId } = await req.json();
+
+    if (!name || !url || !organizationId) {
+      return NextResponse.json(
+        { message: "Project name, URL, and organization ID are required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate URL format
+    try {
+      new URL(url);
+    } catch (e) {
+      return NextResponse.json(
+        { message: "Invalid URL format" },
+        { status: 400 }
+      );
+    }
+
+    // Check if the user has access to the organization
+    const userOrganization = await prisma.organizationUser.findFirst({
+      where: {
+        userId: session.user.id,
+        organizationId,
       },
     });
 
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    // Get organization (assuming user has at least one organization)
-    // In a more complete implementation, you might want to select which org to create the project in
-    if (user.organizations.length === 0) {
+    if (!userOrganization) {
       return NextResponse.json(
-        { error: "No organization found. Please create an organization first." },
-        { status: 400 }
+        { message: "You don't have access to this organization" },
+        { status: 403 }
       );
     }
 
-    const organizationId = user.organizations[0].organizationId;
-
-    // Parse and validate request body
-    const body = await request.json();
-    const validationResult = projectSchema.safeParse(body);
-
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: "Invalid request", details: validationResult.error.errors },
-        { status: 400 }
-      );
-    }
-
-    const { name, url, type, targetCountry, targetLanguage } = validationResult.data;
-
-    // Create project
+    // Create the project
     const project = await prisma.project.create({
       data: {
         name,
         url,
-        type: type as any, // Cast to Prisma enum type
-        targetCountry,
-        targetLanguage,
+        type: type || "WEBSITE",
         organizationId,
-        createdById: user.id,
+        createdById: session.user.id,
+        projectSettings: {
+          create: {
+            rankTrackingFreq: "WEEKLY",
+            autoAuditFrequency: "WEEKLY",
+            emailAlerts: true,
+          },
+        },
+      },
+      include: {
+        projectSettings: true,
       },
     });
 
-    // Also create default project settings
-    await prisma.projectSettings.create({
-      data: {
-        projectId: project.id,
-        rankTrackingFreq: "WEEKLY",
-        autoAuditFrequency: "WEEKLY",
-        emailAlerts: true,
-      },
-    });
-
-    return NextResponse.json(project);
-  } catch (error: any) {
-    console.error("Error creating project:", error);
     return NextResponse.json(
-      { error: "Failed to create project" },
+      {
+        project,
+        message: "Project created successfully",
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error("Project creation error:", error);
+    return NextResponse.json(
+      { message: "Something went wrong" },
       { status: 500 }
     );
   }

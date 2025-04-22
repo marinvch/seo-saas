@@ -4,15 +4,13 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { Toaster } from "@/components/ui/toaster";
-import { ReduxProvider } from "@/store/redux-provider";
 import { ServiceInitializer } from "@/components/providers/service-initializer";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "SEO SaaS | Complete SEO Platform for Digital Agencies",
-  description:
-    "All-in-one SEO platform for digital agencies with site auditing, rank tracking, keyword research, and more.",
+  title: "SEOmaster - All-in-One SEO Platform for Digital Agencies",
+  description: "Streamline your agency's SEO workflows. Audit sites, track keywords, monitor backlinks, and deliver beautiful client reports - all in one platform.",
 };
 
 export default function RootLayout({
@@ -23,20 +21,18 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <AuthProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <ReduxProvider>
-              <ServiceInitializer />
-              {children}
-              <Toaster />
-            </ReduxProvider>
-          </ThemeProvider>
-        </AuthProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            <ServiceInitializer />
+            {children}
+            <Toaster />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
