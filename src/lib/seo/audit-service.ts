@@ -46,13 +46,13 @@ export class AuditService {
           includeSitemap: options.includeSitemap ?? true,
           includeRobots: options.includeRobots ?? true,
           crawlSingleUrl: options.crawlSingleUrl ?? false,
-          followPatterns: options.followPatterns || [],
-          ignorePatterns: options.ignorePatterns || [],
+          followPatterns: options.followPatterns ? JSON.parse(JSON.stringify(options.followPatterns)) : [],
+          ignorePatterns: options.ignorePatterns ? JSON.parse(JSON.stringify(options.ignorePatterns)) : [],
           userAgent: options.userAgent || "SEO SaaS Auditor/1.0",
           useJavascript: options.useJavascript ?? useJavascript,
         },
         totalPages: 0,
-        issuesSummary: { critical: 0, error: 0, warning: 0, info: 0 },
+        issuesSummary: { critical: 0, error_severity: 0, warning: 0, info: 0 },
       }
     });
 

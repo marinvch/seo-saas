@@ -36,7 +36,7 @@ export interface AuditOptions {
  */
 export interface AuditIssue {
   type: string;
-  severity: 'critical' | 'error' | 'warning' | 'info';
+  severity: 'critical' | 'error_severity' | 'warning' | 'info';
   description: string;
   recommendation?: string;
   selector?: string;
@@ -53,6 +53,7 @@ export interface PageAuditResult {
   status: number | string;
   loadTime: number;
   contentLength: number;
+  pageSizeKB?: number;
   h1: string[];
   h2: string[];
   h3: string[];
@@ -66,6 +67,10 @@ export interface PageAuditResult {
   canonicalUrl?: string;
   metaRobots?: string;
   structured?: Record<string, any>;
+  hasStructuredData?: boolean;
+  isMobileFriendly?: boolean;
+  hasProperHeadingStructure?: boolean;
+  error?: string;
   issues: AuditIssue[];
 }
 
@@ -74,7 +79,7 @@ export interface PageAuditResult {
  */
 export interface IssueSummary {
   critical: number;
-  error: number;
+  error_severity: number;
   warning: number;
   info: number;
 }
@@ -85,7 +90,7 @@ export interface IssueSummary {
 export interface SeoIssue {
   id: string;
   url: string;
-  type: 'critical' | 'error' | 'warning' | 'info';
+  type: 'critical' | 'error_severity' | 'warning' | 'info';
   category: 'content' | 'meta' | 'performance' | 'security' | 'technical' | 'other';
   title: string;
   description: string;

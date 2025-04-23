@@ -53,8 +53,9 @@ export class SiteCrawler {
       })));
       
       log.info(`Crawl completed successfully. Crawled ${this.visitedUrls.size} pages in ${this.getElapsedTime()}`);
-    } catch (error) {
-      log.error(`Crawl failed: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      log.error(`Crawl failed: ${errorMessage}`);
       throw error;
     }
   }
@@ -75,7 +76,7 @@ export class SiteCrawler {
   public getIssueSummary() {
     const summary = {
       critical: 0,
-      error: 0,
+      error_severity: 0,
       warning: 0,
       info: 0,
     };
@@ -84,7 +85,12 @@ export class SiteCrawler {
       if (!result.issues) continue;
 
       for (const issue of result.issues) {
-        summary[issue.severity]++;
+        if (issue.severity === 'critical' || 
+            issue.severity === 'error_severity' || 
+            issue.severity === 'warning' || 
+            issue.severity === 'info') {
+          summary[issue.severity]++;
+        }
       }
     }
 
@@ -108,6 +114,7 @@ export class SiteCrawler {
   private createCrawler() {
     const maxPages = this.options.maxPages || 100;
     const maxDepth = this.options.maxDepth || 3;
+    const siteCrawler = this; // Store a reference to access from within callbacks
 
     return new PlaywrightCrawler({
       // Limit the number of requests
@@ -133,8 +140,8 @@ export class SiteCrawler {
         maxTasksPerMinute: 60, // Rate limit to be respectful
       },
       
-      // Configure browser to be more efficient, respect useJavascript option
-      playwright: {
+      // Configure browser options
+      launchContext: {
         launchOptions: {
           headless: true,
           args: ['--disable-gpu', '--disable-dev-shm-usage', '--disable-setuid-sandbox'],
@@ -146,7 +153,7 @@ export class SiteCrawler {
         async ({ page }) => {
           // Skip loading images, fonts, and other resources to speed up crawling
           // Only skip resources if useJavascript is false or undefined
-          if (!this.options.useJavascript) {
+          if (!siteCrawler.options.useJavascript) {
             await page.route('**/*.{png,jpg,jpeg,gif,webp,svg,css,woff,woff2}', route => route.abort());
           }
         },
@@ -157,15 +164,15 @@ export class SiteCrawler {
         const url = request.url;
         const pageTitle = await page.title();
 
-        log.info(`Crawling: ${url} (${this.visitedUrls.size + 1}/${maxPages})`);
+        log.info(`Crawling: ${url} (${siteCrawler.visitedUrls.size + 1}/${maxPages})`);
 
         // Skip if we've already visited this URL
-        if (this.visitedUrls.has(url)) {
+        if (siteCrawler.visitedUrls.has(url)) {
           log.debug(`Skipping already visited URL: ${url}`);
           return;
         }
 
-        this.visitedUrls.add(url);
+        siteCrawler.visitedUrls.add(url);
         
         try {
           // Perform page analysis
@@ -182,11 +189,10 @@ export class SiteCrawler {
           
           // Check for mobile friendliness
           const viewport = $('meta[name="viewport"]').attr('content') || null;
-          const isMobileFriendly = viewport && viewport.includes('width=device-width');
+          const isMobileFriendly = viewport && viewport.includes('width=device-width') ? true : false;
 
           // Get response status
-          const response = request.response;
-          const status = response?.statusCode || 0;
+          const status = request.loadedUrl ? 200 : 0; // Fallback if response not available
 
           // Get load time
           const loadTime = Date.now() - startTime;
@@ -200,7 +206,7 @@ export class SiteCrawler {
           const h3Elements = $('h3').map((_, el) => $(el).text().trim()).get();
           
           // Check heading structure
-          const hasProperHeadingStructure = this.checkHeadingStructure($);
+          const hasProperHeadingStructure = siteCrawler.checkHeadingStructure($);
 
           // Get links
           const links = $('a[href]');
@@ -213,8 +219,8 @@ export class SiteCrawler {
               const href = $(link).attr('href') || '';
               if (!href || href.startsWith('#') || href.startsWith('mailto:')) return;
               
-              const url = new URL(href, this.baseUrl);
-              if (url.hostname === new URL(this.baseUrl).hostname) {
+              const url = new URL(href, siteCrawler.baseUrl);
+              if (url.hostname === new URL(siteCrawler.baseUrl).hostname) {
                 internalLinks.push(url.href);
               } else {
                 externalLinks.push(url.href);
@@ -241,19 +247,19 @@ export class SiteCrawler {
           }).get().filter(Boolean);
           
           // Analyze page performance - only if specified in options
-          const performanceIssues = this.options.checkPerformance 
-            ? await this.analyzePagePerformance(page) 
+          const performanceIssues = siteCrawler.options.checkPerformance 
+            ? await siteCrawler.analyzePagePerformance(page) 
             : [];
 
           // Check broken links if specified in options
           let brokenLinksIssues: AuditIssue[] = [];
-          if (this.options.checkBrokenLinks) {
-            brokenLinksIssues = await this.checkBrokenLinks(page, internalLinks);
+          if (siteCrawler.options.checkBrokenLinks) {
+            brokenLinksIssues = await siteCrawler.checkBrokenLinks(page, internalLinks);
           }
 
           // Identify all SEO issues
           const issues: AuditIssue[] = [
-            ...await this.analyzePageIssues(page, {
+            ...await siteCrawler.analyzePageIssues(page, {
               url,
               title: pageTitle,
               description: metaDescription,
@@ -286,19 +292,19 @@ export class SiteCrawler {
             issues,
           };
 
-          this.results.set(url, pageResult);
-          this.totalPages = Math.max(this.totalPages, this.results.size);
+          siteCrawler.results.set(url, pageResult);
+          siteCrawler.totalPages = Math.max(siteCrawler.totalPages, siteCrawler.results.size);
 
           // Report progress if callback is provided
-          if (this.onProgress) {
-            await this.onProgress(this.visitedUrls.size, this.totalPages);
+          if (siteCrawler.onProgress) {
+            await siteCrawler.onProgress(siteCrawler.visitedUrls.size, siteCrawler.totalPages);
           }
 
           // Only enqueue links if we're not at max depth and not in single URL mode
-          if (!this.options.crawlSingleUrl && request.userData.depth < maxDepth) {
+          if (!siteCrawler.options.crawlSingleUrl && request.userData?.depth < maxDepth) {
             await enqueueLinks({
-              globs: this.transformFollowPatterns(this.options.followPatterns || []),
-              exclude: this.transformIgnorePatterns(this.options.ignorePatterns || []),
+              globs: siteCrawler.transformFollowPatterns(siteCrawler.options.followPatterns || []),
+              exclude: siteCrawler.transformIgnorePatterns(siteCrawler.options.ignorePatterns || []),
               transformRequestFunction: (req) => {
                 // Skip non-HTML resources
                 if (req.url.match(/\.(jpg|jpeg|png|gif|webp|css|js|woff|pdf|zip)$/i)) {
@@ -306,27 +312,37 @@ export class SiteCrawler {
                 }
                 
                 // Custom URL processing logic
-                if (this.shouldSkipUrl(req.url)) {
+                if (siteCrawler.shouldSkipUrl(req.url)) {
                   return false;
                 }
                 
                 // Add depth to userData
-                req.userData.depth = (request.userData.depth || 0) + 1;
+                if (!req.userData) req.userData = {};
+                req.userData.depth = (request.userData?.depth || 0) + 1;
                 return req;
               }
             });
           }
-        } catch (error) {
-          log.error(`Error processing ${url}: ${error.message}`);
-          this.results.set(url, {
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          log.error(`Error processing ${url}: ${errorMessage}`);
+          siteCrawler.results.set(url, {
             url,
             title: pageTitle || '',
-            error: error.message || 'Unknown error',
+            description: '',
             status: 0,
+            loadTime: 0,
+            contentLength: 0,
+            h1: [],
+            h2: [],
+            h3: [],
+            internalLinks: [],
+            externalLinks: [],
+            images: [],
             issues: [{
               type: 'processing_error',
-              severity: 'error',
-              description: `Failed to process page: ${error.message}`,
+              severity: 'error_severity',
+              description: `Failed to process page: ${errorMessage}`,
               recommendation: 'Check the page manually to identify issues',
             }]
           });
@@ -375,7 +391,7 @@ export class SiteCrawler {
     } else if (pageData.title.length < 10) {
       issues.push({
         type: 'title_too_short',
-        severity: 'error',
+        severity: 'error_severity',
         description: `Page title is too short (${pageData.title.length} characters).`,
         recommendation: 'Expand title to 50-60 characters with target keywords.',
       });
@@ -392,7 +408,7 @@ export class SiteCrawler {
     if (this.hasDuplicateTitle(pageData.title)) {
       issues.push({
         type: 'duplicate_title',
-        severity: 'error',
+        severity: 'error_severity',
         description: 'This page has the same title as other pages on the site.',
         recommendation: 'Create unique titles for each page on the site.',
       });
@@ -402,7 +418,7 @@ export class SiteCrawler {
     if (!pageData.description) {
       issues.push({
         type: 'missing_meta_description',
-        severity: 'error',
+        severity: 'error_severity',
         description: 'Page is missing a meta description.',
         recommendation: 'Add a descriptive meta description with target keywords.',
       });
@@ -426,7 +442,7 @@ export class SiteCrawler {
     if (pageData.h1.length === 0) {
       issues.push({
         type: 'missing_h1',
-        severity: 'error',
+        severity: 'error_severity',
         description: 'Page is missing an H1 heading.',
         recommendation: 'Add a descriptive H1 heading with target keywords.',
       });
@@ -511,7 +527,7 @@ export class SiteCrawler {
     if (brokenLinks > 0) {
       issues.push({
         type: 'broken_links',
-        severity: 'error',
+        severity: 'error_severity',
         description: `Found ${brokenLinks} broken links.`,
         recommendation: 'Fix or remove broken links to improve user experience and SEO.',
       });
@@ -526,7 +542,7 @@ export class SiteCrawler {
     if (!hasMobileViewport) {
       issues.push({
         type: 'not_mobile_friendly',
-        severity: 'error',
+        severity: 'error_severity',
         description: 'Page is not mobile-friendly (missing proper viewport meta tag).',
         recommendation: 'Add a proper viewport meta tag for mobile devices.',
       });
@@ -737,8 +753,9 @@ export class SiteCrawler {
         } else {
           log.warning('No URLs found in sitemap');
         }
-      } catch (error) {
-        log.error(`Error fetching sitemap: ${error.message}`);
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        log.error(`Error fetching sitemap: ${errorMessage}`);
       }
     }
 
@@ -750,8 +767,9 @@ export class SiteCrawler {
           log.info(`Found ${robotsUrls.length} URLs in robots.txt`);
           startUrls.push(...robotsUrls);
         }
-      } catch (error) {
-        log.warning(`Error parsing robots.txt: ${error.message}`);
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        log.warning(`Error parsing robots.txt: ${errorMessage}`);
       }
     }
 
@@ -790,7 +808,9 @@ export class SiteCrawler {
       }
       
       return sitemapUrls;
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      log.warning(`Error parsing robots.txt: ${errorMessage}`);
       return [];
     }
   }

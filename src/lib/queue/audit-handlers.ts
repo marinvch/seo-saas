@@ -131,7 +131,7 @@ export function initAuditHandlers() {
           status: AuditStatus.PENDING,
           options: schedule.options as any,
           totalPages: 0,
-          issuesSummary: { critical: 0, error: 0, warning: 0, info: 0 },
+          issuesSummary: { critical: 0, error_severity: 0, warning: 0, info: 0 },
         },
       });
       

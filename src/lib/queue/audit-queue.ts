@@ -179,7 +179,7 @@ async function processScheduledAuditJob(job: Job) {
         status: AuditStatus.PENDING,
         options: schedule.options,
         totalPages: 0,
-        issuesSummary: { critical: 0, error: 0, warning: 0, info: 0 },
+        issuesSummary: { critical: 0, error_severity: 0, warning: 0, info: 0 },
       },
     });
     
