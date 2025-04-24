@@ -43,64 +43,69 @@
 **Reference Documentation:**
 
 - **Authentication Documentation**: Refer to the following files for authentication implementation details:
+
   - `.vscode/docs/nextjsDocs.md` - Next.js authentication best practices and examples
   - `.vscode/docs/nextauthDocs.md` - NextAuth.js integration with Next.js App Router
 
+  **Libaries Docs**
+
+  - `./vscode/docs/crawleeDocs.md` - Crawlee.js usage and examples
+
 **Specific Prompts & Areas of Focus:**
 
-1.  **Context Check & Update**:
+1. **Context Check & Update**:
 
-    - "Read the `copilot-status.md` file and summarize the current project status and the next task."
-    - "Update the `copilot-status.md` file: Last completed task was [Task Description]. Current task is [Task Description] with status [Status]. Next tasks are [List Tasks]."
+   - "Read the `copilot-status.md` file and summarize the current project status and the next task."
+   - "Update the `copilot-status.md` file: Last completed task was [Task Description]. Current task is [Task Description] with status [Status]. Next tasks are [List Tasks]."
 
-2.  **MCP Server Usage**:
+2. **MCP Server Usage**:
 
-    - "Generate code optimized for the Context7 MCP server context."
-    - "Use the Prisma MCP server to generate a query for [specific data retrieval/mutation]."
-    - "Leverage the Shadcn UI MCP server to create a [Component Name] component using [Specific Shadcn Primitives like Card, Button, Input] for [Purpose]."
+   - "Generate code optimized for the Context7 MCP server context."
+   - "Use the Prisma MCP server to generate a query for [specific data retrieval/mutation]."
+   - "Leverage the Shadcn UI MCP server to create a [Component Name] component using [Specific Shadcn Primitives like Card, Button, Input] for [Purpose]."
 
-3.  **Next.js 14 & App Router**:
+3. **Next.js 14 & App Router**:
 
-    - "Ensure generated code is fully compatible with Next.js 14 and the App Router paradigm."
-    - "Generate a Next.js App Router route segment for `/app/dashboard/organizations/[orgId]/projects/[projectId]/...` including layout and page files."
-    - "Create a server component for [Purpose] using async/await for data fetching."
-    - "Create a client component for [Purpose] using 'use client' and appropriate React hooks."
+   - "Ensure generated code is fully compatible with Next.js 14 and the App Router paradigm."
+   - "Generate a Next.js App Router route segment for `/app/dashboard/organizations/[orgId]/projects/[projectId]/...` including layout and page files."
+   - "Create a server component for [Purpose] using async/await for data fetching."
+   - "Create a client component for [Purpose] using 'use client' and appropriate React hooks."
 
-4.  **State Management (Redux Toolkit)**:
+4. **State Management (Redux Toolkit)**:
 
-    - "Generate a Redux Toolkit slice for [Feature Name] state, including initial state, reducers using `createSlice`, and necessary actions."
-    - "Implement `useAppSelector` to access [Specific State Slice] in [Component Name]."
-    - "Implement `useAppDispatch` to dispatch [Action Name] in [Component Name]."
+   - "Generate a Redux Toolkit slice for [Feature Name] state, including initial state, reducers using `createSlice`, and necessary actions."
+   - "Implement `useAppSelector` to access [Specific State Slice] in [Component Name]."
+   - "Implement `useAppDispatch` to dispatch [Action Name] in [Component Name]."
 
-5.  **API Routes & Backend**:
+5. **API Routes & Backend**:
 
-    - "Generate a Next.js API route handler in `/app/api/...` for [HTTP Method] requests to `/api/[resource]`."
-    - "Implement NextAuth session checking middleware for the API route."
-    - "Use Prisma Client via the Prisma MCP server for database interaction within the API route."
-    - "Ensure proper JSON request parsing and JSON response formatting with appropriate status codes."
-    - "Implement robust error handling using try-catch blocks and return standardized error responses."
+   - "Generate a Next.js API route handler in `/app/api/...` for [HTTP Method] requests to `/api/[resource]`."
+   - "Implement NextAuth session checking middleware for the API route."
+   - "Use Prisma Client via the Prisma MCP server for database interaction within the API route."
+   - "Ensure proper JSON request parsing and JSON response formatting with appropriate status codes."
+   - "Implement robust error handling using try-catch blocks and return standardized error responses."
 
-6.  **Database (Prisma & PostgreSQL)**:
+6. **Database (Prisma & PostgreSQL)**:
 
-    - "Generate Prisma schema modifications for [New Feature/Model]." (Use Prisma MCP)
-    - "Write a Prisma query to [Specific Action, e.g., fetch projects for an organization with user details]." (Use Prisma MCP)
-    - "Ensure all database interactions are type-safe using Prisma Client."
+   - "Generate Prisma schema modifications for [New Feature/Model]." (Use Prisma MCP)
+   - "Write a Prisma query to [Specific Action, e.g., fetch projects for an organization with user details]." (Use Prisma MCP)
+   - "Ensure all database interactions are type-safe using Prisma Client."
 
-7.  **AI Integration (Gemini 1.5 Flash / OpenAI)**:
+7. **AI Integration (Gemini 1.5 Flash / OpenAI / and More in the future)**:
 
-    - "Generate a function to call the Gemini 1.5 Flash API for [Specific Task, e.g., generating SEO content suggestions based on keywords]."
-    - "Integrate the AI function into [Specific Workflow/Component] to provide insights."
+   - "Generate a function to call the Gemini 1.5 Flash API for [Specific Task, e.g., generating SEO content suggestions based on keywords]."
+   - "Integrate the AI function into [Specific Workflow/Component] to provide insights."
 
-8.  **Crawling (Crawlee.js)**:
+8. **Crawling (Crawlee.js)**:
 
-    - "Generate a Crawlee.js task/actor to crawl [Target Site Aspect, e.g., sitemap, specific pages] for [Purpose, e.g., on-page analysis]."
-    - "Implement logic to save crawl results to the PostgreSQL database using Prisma."
+   - "Generate a Crawlee.js task/actor to crawl [Target Site Aspect, e.g., sitemap, specific pages] for [Purpose, e.g., on-page analysis]."
+   - "Implement logic to save crawl results to the PostgreSQL database using Prisma."
 
-9.  **Testing (Jest, Playwright, MSW)**:
+9. **Testing (Jest, Playwright, MSW)**:
 
-    - "Generate Jest unit tests for the utility function in `/lib/[functionName].ts`."
-    - "Generate Playwright integration tests for the [User Flow, e.g., project creation] workflow."
-    - "Set up MSW handlers to mock the `/api/[resource]` endpoint for testing."
+   - "Generate Jest unit tests for the utility function in `/lib/[functionName].ts`."
+   - "Generate Playwright integration tests for the [User Flow, e.g., project creation] workflow."
+   - "Set up MSW handlers to mock the `/api/[resource]` endpoint for testing."
 
 10. **Security & Compliance**:
 
@@ -153,7 +158,7 @@
 | **Crawlee.js**              | Web crawling (audits)      | High-performance, headless crawling                                   |
 | **Shadcn/ui**               | UI components              | Accessible, customizable React components                             |
 | **Redux Toolkit**           | State management           | Scalable and industry-standard for React applications                 |
-| **OpenAI API**              | AI services                | SEO insights, content suggestions                                     |
+| **Gemini API**              | AI services                | SEO insights, content suggestions                                     |
 | **MCP Servers**             | Optimization & Modularity  | Use Context7 MCP, Prisma MCP, and Shadcn UI MCP for better workflows  |
 
 ## 3. 🏗️ System Architecture

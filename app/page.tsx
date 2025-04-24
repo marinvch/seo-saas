@@ -88,8 +88,8 @@ export default function LandingPage() {
                   <Image
                     src="/images/SEO-master.png"
                     alt="SEOmaster Dashboard"
-                    layout="fill"
-                    objectFit="cover"
+                    fill
+                    style={{ objectFit: "cover" }}
                     onError={() => setImageError(true)}
                   />
                 </div>

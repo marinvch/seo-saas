@@ -1,40 +1,30 @@
-import { withAuth } from "next-auth/middleware";
-import { NextResponse } from "next/server";
+import { withAuth } from 'next-auth/middleware';
+import { NextResponse } from 'next/server';
 
-// This middleware protects the dashboard routes
+// This middleware protects all routes under /dashboard and /api
+// except for authentication-related API routes
 export default withAuth(
   function middleware(req) {
-    // Get the pathname
-    const { pathname } = req.nextUrl;
-    // Get the token from the request
-    const token = req.nextauth?.token;
-
-    // Allow access to onboarding for authenticated users regardless of role
-    if (pathname.startsWith("/onboarding") && token) {
-      return NextResponse.next();
-    }
-
-    // Admin routes - only accessible to admin users
-    if (pathname.startsWith("/dashboard/admin") && token?.role !== "ADMIN") {
-      // Redirect to access denied page
-      return NextResponse.redirect(new URL("/auth/access-denied", req.url));
-    }
-
-    // All other paths under dashboard are already protected by withAuth
+    // Additional custom middleware logic can be added here
+    
+    // You can modify the response or headers if needed
     return NextResponse.next();
   },
   {
     callbacks: {
-      // Only run middleware on authorized routes
       authorized: ({ token }) => !!token,
+    },
+    // Only protect these paths
+    pages: {
+      signIn: '/auth/signin',
     },
   }
 );
 
-// Protect all dashboard routes and API routes that should require authentication
+// Match dashboard routes and protected API routes, but exclude public paths
 export const config = {
   matcher: [
-    "/dashboard/:path*", 
-    "/onboarding/:path*"
+    '/dashboard/:path*',
+    '/api/((?!auth|webhooks).*)*',
   ],
 };

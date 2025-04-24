@@ -2,8 +2,9 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { ThemeProvider } from '../components/providers/theme-provider';
-import AuthProvider from '../components/providers/auth-provider';
+import { AuthProvider } from '../components/providers/auth-provider';
 import ReduxProvider from '../components/providers/redux-provider';
+import { ServiceInitializer } from '../components/providers/service-initializer';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -22,6 +23,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthProvider>
           <ReduxProvider>
+            <ServiceInitializer />
             <ThemeProvider
               attribute="class"
               defaultTheme="system"
