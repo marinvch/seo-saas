@@ -1,52 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
-/**
- * Protects an API route by verifying authentication and optionally checking user roles
- * @param handler The API route handler function
- * @param options Configuration options for route protection
- * @returns Protected API route handler
- */
-export function withApiAuth<T>(
-  handler: (
-    req: NextRequest, 
-    context: { params: T }, 
-    token: any
-  ) => Promise<NextResponse> | NextResponse,
-  options: {
-    requiredRole?: string | string[];
-  } = {}
-) {
-  return async (
-    req: NextRequest,
-    context: { params: T }
-  ): Promise<NextResponse> => {
-    const token = await getToken({ req });
+// Extend NextRequest to include auth property
+declare module 'next/server' {
+  interface NextRequest {
+    auth: {
+      userId: string;
+      email: string;
+      role: string;
+    };
+  }
+}
 
-    // Check if user is authenticated
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Unauthorized: Authentication required' },
-        { status: 401 }
-      );
-    }
+export function withApiAuth(handler: Function) {
+  return async (req: NextRequest, params: any) => {
+    try {
+      const token = await getToken({ req });
 
-    // Check for required role if specified
-    if (options.requiredRole) {
-      const userRole = token.role as string;
-      const requiredRoles = Array.isArray(options.requiredRole)
-        ? options.requiredRole
-        : [options.requiredRole];
-
-      if (!userRole || !requiredRoles.includes(userRole)) {
+      if (!token) {
         return NextResponse.json(
-          { error: 'Forbidden: Insufficient permissions' },
-          { status: 403 }
+          { error: 'Unauthorized' },
+          { status: 401 }
         );
       }
-    }
 
-    // User is authenticated and has the required role, proceed with the handler
-    return handler(req, context, token);
+      // Add auth data to request
+      req.auth = {
+        userId: token.sub!,
+        email: token.email as string,
+        role: token.role as string,
+      };
+
+      return handler(req, params);
+    } catch (error) {
+      console.error('API Auth Error:', error);
+      return NextResponse.json(
+        { error: 'Internal server error' },
+        { status: 500 }
+      );
+    }
   };
 }

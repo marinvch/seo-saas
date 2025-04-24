@@ -1,231 +1,254 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { RootState } from '../store';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import type { RootState } from '../store';
+import type { ProjectType, ProjectSettings } from '@prisma/client';
 
-// Define project types from Prisma schema
-export enum ProjectType {
-  WEBSITE = 'WEBSITE',
-  BLOG = 'BLOG',
-  ECOMMERCE = 'ECOMMERCE',
-  SOCIAL_MEDIA = 'SOCIAL_MEDIA',
-}
-
-// Project interface matching Prisma schema
-export interface Project {
-  id: string;
+interface ProjectData {
   name: string;
   url: string;
   type: ProjectType;
+  targetCountry?: string;
+  targetLanguage?: string;
   organizationId: string;
-  createdById: string;
-  targetCountry?: string | null;
-  targetLanguage?: string | null;
-  createdAt: string;
-  updatedAt: string;
 }
 
-// Interface for the project state slice
+interface Project extends ProjectData {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  projectSettings?: ProjectSettings;
+}
+
 interface ProjectsState {
-  projects: Project[];
-  currentProject: Project | null;
-  isLoading: boolean;
+  items: Project[];
+  selectedProject: Project | null;
+  loading: boolean;
   error: string | null;
-  filters: {
-    organizationId: string | null;
-    type: ProjectType | null;
-    searchQuery: string;
+}
+
+const initialState: ProjectsState = {
+  items: [],
+  selectedProject: null,
+  loading: false,
+  error: null,
+};
+
+export const createProject = createAsyncThunk(
+  'projects/create',
+  async (data: ProjectData) => {
+    const response = await fetch('/api/projects', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to create project');
+    }
+
+    return response.json();
+  }
+);
+
+export const fetchProjects = createAsyncThunk(
+  'projects/fetchAll',
+  async (organizationId?: string) => {
+    const url = organizationId 
+      ? `/api/projects?organizationId=${organizationId}`
+      : '/api/projects';
+      
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch projects');
+    }
+
+    return response.json();
+  }
+);
+
+export const fetchProjectById = createAsyncThunk(
+  'projects/fetchById',
+  async (projectId: string) => {
+    const response = await fetch(`/api/projects/${projectId}`);
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch project');
+    }
+
+    return response.json();
+  }
+);
+
+interface UpdateProjectData {
+  projectId: string;
+  data: {
+    name?: string;
+    url?: string;
+    type?: ProjectType;
+    targetCountry?: string;
+    targetLanguage?: string;
+    projectSettings?: Partial<ProjectSettings>;
   };
 }
 
-// Initial state for projects slice
-const initialState: ProjectsState = {
-  projects: [],
-  currentProject: null,
-  isLoading: false,
-  error: null,
-  filters: {
-    organizationId: null,
-    type: null,
-    searchQuery: '',
-  },
-};
-
-// Async thunk for fetching projects
-export const fetchProjects = createAsyncThunk(
-  'projects/fetchProjects',
-  async (organizationId: string | undefined, { rejectWithValue }) => {
-    try {
-      const url = organizationId 
-        ? `/api/organizations/${organizationId}/projects` 
-        : '/api/projects';
-        
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch projects');
-      }
-      
-      const data = await response.json();
-      return data.projects;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to fetch projects');
-    }
-  }
-);
-
-// Async thunk for fetching a single project
-export const fetchProjectById = createAsyncThunk(
-  'projects/fetchProjectById',
-  async (projectId: string, { rejectWithValue }) => {
-    try {
-      const response = await fetch(`/api/projects/${projectId}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch project');
-      }
-      
-      const data = await response.json();
-      return data;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to fetch project');
-    }
-  }
-);
-
-// Async thunk for creating a project
-export const createProject = createAsyncThunk(
-  'projects/createProject',
-  async (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>, { rejectWithValue }) => {
-    try {
-      const response = await fetch('/api/projects', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(projectData),
+export const updateProject = createAsyncThunk(
+  'projects/update',
+  async ({ projectId, data }: UpdateProjectData) => {
+    let response;
+    
+    if (data.projectSettings) {
+      // Update project settings
+      response = await fetch(`/api/projects/${projectId}/settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data.projectSettings),
       });
-      
-      if (!response.ok) {
-        throw new Error('Failed to create project');
-      }
-      
-      const data = await response.json();
-      return data;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to create project');
+    } else {
+      // Update project details
+      response = await fetch(`/api/projects/${projectId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
     }
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to update project');
+    }
+
+    return response.json();
   }
 );
 
-// Projects slice for managing project data
+export const deleteProject = createAsyncThunk(
+  'projects/delete',
+  async (projectId: string) => {
+    const response = await fetch(`/api/projects/${projectId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to delete project');
+    }
+
+    return projectId;
+  }
+);
+
 const projectsSlice = createSlice({
   name: 'projects',
   initialState,
   reducers: {
-    // Set current project
-    setCurrentProject: (state, action: PayloadAction<Project | null>) => {
-      state.currentProject = action.payload;
+    clearSelectedProject: (state) => {
+      state.selectedProject = null;
     },
-    
-    // Update filters
-    setOrganizationFilter: (state, action: PayloadAction<string | null>) => {
-      state.filters.organizationId = action.payload;
-    },
-    
-    setTypeFilter: (state, action: PayloadAction<ProjectType | null>) => {
-      state.filters.type = action.payload;
-    },
-    
-    setSearchQuery: (state, action: PayloadAction<string>) => {
-      state.filters.searchQuery = action.payload;
-    },
-    
-    // Clear all filters
-    clearFilters: (state) => {
-      state.filters = initialState.filters;
+    setError: (state, action) => {
+      state.error = action.payload;
     },
   },
   extraReducers: (builder) => {
-    // Fetch projects cases
     builder
-      .addCase(fetchProjects.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(fetchProjects.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.projects = action.payload;
-      })
-      .addCase(fetchProjects.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string;
-      })
-      
-      // Fetch project by ID cases
-      .addCase(fetchProjectById.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(fetchProjectById.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.currentProject = action.payload;
-      })
-      .addCase(fetchProjectById.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string;
-      })
-      
-      // Create project cases
+      // Create Project
       .addCase(createProject.pending, (state) => {
-        state.isLoading = true;
+        state.loading = true;
         state.error = null;
       })
       .addCase(createProject.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.projects.push(action.payload);
-        state.currentProject = action.payload;
+        state.loading = false;
+        state.items.push(action.payload);
+        state.selectedProject = action.payload;
       })
       .addCase(createProject.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string;
+        state.loading = false;
+        state.error = action.error.message || 'Failed to create project';
+      })
+      // Fetch All Projects
+      .addCase(fetchProjects.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchProjects.fulfilled, (state, action) => {
+        state.loading = false;
+        state.items = action.payload;
+      })
+      .addCase(fetchProjects.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to fetch projects';
+      })
+      // Fetch Project by ID
+      .addCase(fetchProjectById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchProjectById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.selectedProject = action.payload;
+        const index = state.items.findIndex(p => p.id === action.payload.id);
+        if (index !== -1) {
+          state.items[index] = action.payload;
+        } else {
+          state.items.push(action.payload);
+        }
+      })
+      .addCase(fetchProjectById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to fetch project';
+      })
+      // Update Project
+      .addCase(updateProject.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateProject.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.items.findIndex(p => p.id === action.payload.id);
+        if (index !== -1) {
+          state.items[index] = {
+            ...state.items[index],
+            ...action.payload
+          };
+        }
+        if (state.selectedProject?.id === action.payload.id) {
+          state.selectedProject = {
+            ...state.selectedProject,
+            ...action.payload
+          };
+        }
+      })
+      .addCase(updateProject.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to update project';
+      })
+      // Delete Project
+      .addCase(deleteProject.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteProject.fulfilled, (state, action) => {
+        state.loading = false;
+        state.items = state.items.filter(p => p.id !== action.payload);
+        if (state.selectedProject?.id === action.payload) {
+          state.selectedProject = null;
+        }
+      })
+      .addCase(deleteProject.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to delete project';
       });
   },
 });
 
-// Export actions and reducer
-export const {
-  setCurrentProject,
-  setOrganizationFilter,
-  setTypeFilter,
-  setSearchQuery,
-  clearFilters,
-} = projectsSlice.actions;
+export const { clearSelectedProject, setError } = projectsSlice.actions;
 
-// Selector to get filtered projects
-export const selectFilteredProjects = (state: RootState) => {
-  const { projects, filters } = state.projects;
-  
-  return projects.filter(project => {
-    // Filter by organization
-    if (filters.organizationId && project.organizationId !== filters.organizationId) {
-      return false;
-    }
-    
-    // Filter by type
-    if (filters.type && project.type !== filters.type) {
-      return false;
-    }
-    
-    // Filter by search query
-    if (filters.searchQuery) {
-      const query = filters.searchQuery.toLowerCase();
-      return (
-        project.name.toLowerCase().includes(query) ||
-        project.url.toLowerCase().includes(query)
-      );
-    }
-    
-    return true;
-  });
-};
+// Selectors
+export const selectAllProjects = (state: RootState) => state.projects.items;
+export const selectSelectedProject = (state: RootState) => state.projects.selectedProject;
+export const selectProjectsLoading = (state: RootState) => state.projects.loading;
+export const selectProjectsError = (state: RootState) => state.projects.error;
 
 export default projectsSlice.reducer;

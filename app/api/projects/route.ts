@@ -1,124 +1,109 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withApiAuth } from '../../../lib/auth';
-import { PrismaClient } from '@prisma/client';
+import { withApiAuth } from '@/lib/auth/api-auth';
+import { prisma } from '@/lib/db/prisma-client';
+import { z } from 'zod';
 
-const prisma = new PrismaClient();
+const projectSchema = z.object({
+  name: z.string().min(3),
+  url: z.string().url(),
+  type: z.enum(['WEBSITE', 'BLOG', 'ECOMMERCE', 'SOCIAL_MEDIA']),
+  targetCountry: z.string().min(2).optional(),
+  targetLanguage: z.string().min(2).optional(),
+  organizationId: z.string().uuid(),
+});
 
-// Handle GET requests to /api/projects
-export const GET = withApiAuth(async (req: NextRequest, { params }, token) => {
+export const POST = withApiAuth(async (req: NextRequest) => {
   try {
-    const userId = token.sub;
-    
-    // Get query parameters for filtering
-    const { searchParams } = new URL(req.url);
-    const organizationId = searchParams.get('organizationId');
-    
-    // Fetch projects with filtering
-    let projects;
-    if (organizationId) {
-      // Fetch projects for a specific organization
-      projects = await prisma.project.findMany({
-        where: {
-          organizationId: organizationId,
-        },
-        include: {
-          organization: {
-            select: {
-              id: true,
-              name: true,
-              slug: true,
-            },
-          },
-        },
-        orderBy: {
-          updatedAt: 'desc',
-        },
-      });
-    } else {
-      // Fetch all projects the user has access to through their organizations
-      projects = await prisma.project.findMany({
-        where: {
-          organization: {
-            users: {
-              some: {
-                userId,
-              },
-            },
-          },
-        },
-        include: {
-          organization: {
-            select: {
-              id: true,
-              name: true,
-              slug: true,
-            },
-          },
-        },
-        orderBy: {
-          updatedAt: 'desc',
-        },
-      });
+    const data = await req.json();
+    const validatedData = projectSchema.parse(data);
+    const session = req.auth;
+
+    // Verify user has access to the organization
+    const userOrg = await prisma.organizationUser.findFirst({
+      where: { 
+        userId: session.userId,
+        organizationId: validatedData.organizationId,
+      },
+    });
+
+    if (!userOrg) {
+      return NextResponse.json(
+        { error: 'Organization not found or access denied' },
+        { status: 403 }
+      );
     }
-    
-    return NextResponse.json({ projects });
+
+    // Create project
+    const project = await prisma.project.create({
+      data: {
+        name: validatedData.name,
+        url: validatedData.url,
+        type: validatedData.type,
+        targetCountry: validatedData.targetCountry,
+        targetLanguage: validatedData.targetLanguage,
+        organizationId: validatedData.organizationId,
+        createdById: session.userId,
+      },
+    });
+
+    // Create default project settings
+    await prisma.projectSettings.create({
+      data: {
+        projectId: project.id,
+        rankTrackingFreq: 'WEEKLY',
+        autoAuditFrequency: 'WEEKLY',
+        emailAlerts: true,
+      },
+    });
+
+    return NextResponse.json(project, { status: 201 });
   } catch (error) {
-    console.error('Error fetching projects:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Invalid project data', details: error.errors },
+        { status: 400 }
+      );
+    }
+
+    console.error('Project creation error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch projects' },
+      { error: 'Failed to create project' },
       { status: 500 }
     );
   }
 });
 
-// Handle POST requests to /api/projects
-export const POST = withApiAuth(async (req: NextRequest, { params }, token) => {
+export const GET = withApiAuth(async (req: NextRequest) => {
   try {
-    const userId = token.sub;
-    const body = await req.json();
-    
-    // Validate required fields
-    const { name, url, type, organizationId } = body;
-    if (!name || !url || !type || !organizationId) {
-      return NextResponse.json(
-        { error: 'Missing required fields: name, url, type, and organizationId are required' },
-        { status: 400 }
-      );
-    }
-    
-    // Check if user has access to the organization
-    const userOrganization = await prisma.organizationUser.findFirst({
+    const session = req.auth;
+    const searchParams = new URL(req.url).searchParams;
+    const organizationId = searchParams.get('organizationId');
+
+    // Get user's organization projects
+    const projects = await prisma.project.findMany({
       where: {
-        userId,
-        organizationId,
+        organizationId: organizationId || undefined,
+        organization: {
+          users: {
+            some: {
+              userId: session.userId,
+            },
+          },
+        },
+      },
+      include: {
+        projectSettings: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
     });
-    
-    if (!userOrganization) {
-      return NextResponse.json(
-        { error: 'You do not have access to this organization' },
-        { status: 403 }
-      );
-    }
-    
-    // Create new project
-    const project = await prisma.project.create({
-      data: {
-        name,
-        url,
-        type: type,
-        organizationId,
-        createdById: userId,
-        targetCountry: body.targetCountry,
-        targetLanguage: body.targetLanguage,
-      },
-    });
-    
-    return NextResponse.json(project, { status: 201 });
+
+    return NextResponse.json(projects);
   } catch (error) {
-    console.error('Error creating project:', error);
+    console.error('Project fetch error:', error);
     return NextResponse.json(
-      { error: 'Failed to create project' },
+      { error: 'Failed to fetch projects' },
       { status: 500 }
     );
   }
