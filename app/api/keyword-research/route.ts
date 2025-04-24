@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { auth } from "@/lib/auth/intex";
-import { GeminiService } from "@/lib/ai/gemini-service";
+import { auth } from "@/lib/auth";
 
-// Rate limiter configuration
-const RATE_LIMIT = 10; // 10 requests per window
-const WINDOW_SIZE = 60 * 60 * 1000; // 1 hour
+// Rate limiting variables (in-memory for simplicity, use Redis in production)
+const RATE_LIMIT = 5; // Maximum requests per window
+const WINDOW_SIZE = 60 * 1000; // 1 minute in milliseconds
 const ipRequestRecord: Record<string, { count: number; resetAt: number }> = {};
 
 /**
@@ -14,7 +13,7 @@ const ipRequestRecord: Record<string, { count: number; resetAt: number }> = {};
 export async function POST(request: NextRequest) {
   try {
     // Verify authentication
-    const session = await getServerSession(auth);
+    const session = await auth();
     if (!session?.user) {
       return NextResponse.json(
         { error: "Unauthorized" },
@@ -40,50 +39,59 @@ export async function POST(request: NextRequest) {
     }
     
     // Increment request count
-    ipRequestRecord[clientIp].count++;
-
-    // Parse request body
-    const body = await request.json();
-    const { query, country, projectId } = body;
-
-    // Validate request
-    if (!query || typeof query !== "string") {
-      return NextResponse.json(
-        { error: "Invalid request: query is required" },
-        { status: 400 }
-      );
-    }
-
-    if (!projectId) {
-      return NextResponse.json(
-        { error: "Invalid request: projectId is required" },
-        { status: 400 }
-      );
-    }
-
-    // Initialize Gemini service
-    const geminiService = new GeminiService();
-
-    // Generate keyword suggestions
-    const results = await geminiService.generateKeywordSuggestions(
-      query,
-      country || "global"
-    );
-
-    // Return keyword suggestions
-    return NextResponse.json({
-      success: true,
-      results,
-    });
-  } catch (error: any) {
-    console.error("Keyword research API error:", error);
+    ipRequestRecord[clientIp].count += 1;
     
+    // Parse request body
+    const { query, country } = await request.json();
+    
+    if (!query) {
+      return NextResponse.json(
+        { error: "Query parameter is required" },
+        { status: 400 }
+      );
+    }
+    
+    // For demo purposes, generate mock data
+    // In production, integrate with a real keyword research API
+    const mockKeywords = generateMockKeywordData(query);
+    
+    return NextResponse.json({
+      query,
+      country: country || "global",
+      results: mockKeywords
+    });
+    
+  } catch (error) {
+    console.error("Keyword research error:", error);
     return NextResponse.json(
-      { 
-        error: "Failed to generate keyword suggestions",
-        message: error.message
-      },
+      { error: "Failed to process keyword research request" },
       { status: 500 }
     );
   }
+}
+
+/**
+ * Generate mock keyword data for demonstration
+ */
+function generateMockKeywordData(query: string) {
+  const baseKeywords = [
+    `${query}`,
+    `best ${query}`,
+    `${query} online`,
+    `cheap ${query}`,
+    `${query} near me`,
+    `how to ${query}`,
+    `${query} service`,
+    `${query} company`,
+    `${query} software`,
+    `${query} tools`,
+  ];
+  
+  return baseKeywords.map(keyword => ({
+    keyword,
+    volume: Math.floor(Math.random() * 10000) + 100,
+    difficulty: Math.random() * 100,
+    cpc: parseFloat((Math.random() * 5).toFixed(2)),
+    competition: Math.random(),
+  }));
 }

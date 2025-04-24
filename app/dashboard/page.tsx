@@ -83,7 +83,7 @@ export default function DashboardPage() {
             <CardTitle className="text-sm font-medium">
               Total Projects
             </CardTitle>
-            <Layers className="h-4 w-4 text-muted-foreground" />
+            <div className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">

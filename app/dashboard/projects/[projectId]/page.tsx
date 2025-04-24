@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/db/prisma-client";
-import ProjectDetails from "../../components/projects/project-details";
+import ProjectDetails from "../../../../components/projects/project-details";
 
 interface ProjectPageProps {
   params: {

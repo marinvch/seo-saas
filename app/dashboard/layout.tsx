@@ -69,164 +69,239 @@ export default function DashboardLayout({
   const navItems: NavItem[] = [
     { label: "Overview", href: "/dashboard", icon: <BarChart3 size={20} /> },
     { label: "Projects", href: "/dashboard/projects", icon: <Layers size={20} /> },
-    { label: "Site Audits", href: "/dashboard/audits", icon: <Globe size={20} /> },
-    { label: "Keywords", href: "/dashboard/keywords", icon: <Search size={20} /> },
-    { label: "Rank Tracking", href: "/dashboard/rank-tracking", icon: <LineChart size={20} /> },
+    { label: "Keywords", href: "/dashboard/keywords", icon: <LineChart size={20} /> },
     { label: "Backlinks", href: "/dashboard/backlinks", icon: <Link2 size={20} /> },
-    { label: "Content Audit", href: "/dashboard/content", icon: <FileText size={20} /> },
+    { label: "Content", href: "/dashboard/content", icon: <FileText size={20} /> },
+    { label: "Competitors", href: "/dashboard/competitors", icon: <Globe size={20} /> },
+    { label: "AI Tools", href: "/dashboard/ai-tools", icon: <Search size={20} /> },
     { label: "Team", href: "/dashboard/team", icon: <Users size={20} /> },
     { label: "Settings", href: "/dashboard/settings", icon: <Settings size={20} /> },
   ];
 
-  const closeMobileMenu = () => setMobileMenuOpen(false);
-
-  const initialsFromName = (name?: string | null) => {
-    if (!name) return "U";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
-  };
-
   return (
-    <div className="flex h-screen bg-background">
-      {/* Mobile menu */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 lg:hidden">
-          <div className="fixed left-0 top-0 h-screen w-4/5 max-w-sm bg-background p-6">
-            <div className="flex items-center justify-between mb-8">
-              <Link href="/dashboard" className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
-                SEOmaster
-              </Link>
-              <Button variant="ghost" size="icon" onClick={closeMobileMenu}>
-                <X size={20} />
-              </Button>
-            </div>
-            <nav className="space-y-6">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={closeMobileMenu}
-                  className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-accent"
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </Link>
-              ))}
-            </nav>
-          </div>
-        </div>
-      )}
-
-      {/* Desktop sidebar */}
-      <aside className="hidden lg:flex flex-col w-64 border-r">
-        <div className="flex items-center gap-2 px-6 py-4 border-b h-16">
-          <Link href="/dashboard" className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
-            SEOmaster
+    <div className="flex min-h-screen bg-background">
+      {/* Sidebar - Desktop */}
+      <aside className="fixed hidden md:flex flex-col w-64 h-screen bg-background border-r">
+        <div className="p-6">
+          <Link href="/dashboard" className="flex items-center font-semibold text-lg">
+            <img
+              src="/images/SEO-master.png"
+              alt="SEO Master"
+              className="h-8 w-auto mr-2"
+            />
+            <span>SEOmaster</span>
           </Link>
         </div>
-        <nav className="flex flex-col gap-1 p-4 flex-1 overflow-y-auto">
+
+        <nav className="flex flex-col gap-1 px-2 py-4">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-md hover:bg-accent group",
-                item.href === "/dashboard" && "bg-accent"
-              )}
+              className="flex items-center gap-3 px-4 py-2 text-sm rounded-md hover:bg-accent hover:text-accent-foreground"
             >
-              <div className="text-muted-foreground group-hover:text-foreground">
-                {item.icon}
-              </div>
-              <span>{item.label}</span>
+              {item.icon}
+              {item.label}
             </Link>
           ))}
         </nav>
-        <div className="p-4 border-t">
+
+        <div className="mt-auto p-4">
+          <div className="flex items-center gap-3 mb-2">
+            <Avatar>
+              <AvatarImage
+                src={session?.user?.image || undefined}
+                alt={session?.user?.name || "User"}
+              />
+              <AvatarFallback>
+                {session?.user?.name?.[0] || "U"}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col">
+              <span className="font-medium text-sm">
+                {session?.user?.name || "User"}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {session?.user?.email || ""}
+              </span>
+            </div>
+          </div>
+
           <Button
             variant="outline"
-            className="w-full flex items-center justify-center gap-2"
+            className="w-full justify-start"
             onClick={() => signOut({ callbackUrl: "/" })}
           >
-            <LogOut size={16} />
-            Sign Out
+            <LogOut className="mr-2 h-4 w-4" />
+            Sign out
           </Button>
         </div>
       </aside>
 
-      {/* Main content area */}
-      <div className="flex flex-col flex-1 overflow-hidden">
-        {/* Header */}
-        <header className="flex items-center justify-between border-b h-16 px-6">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
-            onClick={() => setMobileMenuOpen(true)}
+      {/* Mobile Header */}
+      <header className="fixed z-10 md:hidden w-full bg-background border-b h-16 flex items-center justify-between px-4">
+        <div className="flex items-center gap-3">
+          <button
+            className="block md:hidden"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
-            <Menu size={20} />
-          </Button>
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+          <Link href="/dashboard" className="flex items-center font-semibold">
+            <img
+              src="/images/SEO-master.png"
+              alt="SEO Master"
+              className="h-8 w-auto mr-2"
+            />
+          </Link>
+        </div>
 
-          <div className="flex items-center ml-auto gap-4">
-            <ModeToggle />
+        <div className="flex items-center gap-2">
+          <ModeToggle />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Bell size={20} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <div className="p-2 text-center text-sm text-muted-foreground">
+                No new notifications.
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <Bell size={20} />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-80">
-                <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <div className="py-2 px-3 text-sm text-center text-muted-foreground">
-                  No new notifications
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="relative h-8 rounded-full">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage
+                    src={session?.user?.image || undefined}
+                    alt={session?.user?.name || "User"}
+                  />
+                  <AvatarFallback>{session?.user?.name?.[0] || "U"}</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>
+                <div className="flex flex-col">
+                  <span>{session?.user?.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {session?.user?.email}
+                  </span>
                 </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/settings/profile">Profile</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/settings/billing">
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Billing
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/settings">
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => signOut({ callbackUrl: "/" })}
+                className="text-red-600 cursor-pointer"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </header>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                  <Avatar>
-                    <AvatarImage src={session?.user?.image || ""} />
-                    <AvatarFallback>{initialsFromName(session?.user?.name)}</AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/profile">Profile</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/settings">Settings</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/billing">
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    <span>Billing</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/" })}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+      {/* Mobile Sidebar */}
+      <div
+        className={cn(
+          "fixed inset-0 z-50 bg-background md:hidden transform transition-transform duration-300 ease-in-out",
+          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        <div className="flex flex-col h-full pt-16">
+          <div className="p-6">
+            <Link
+              href="/dashboard"
+              className="flex items-center font-semibold text-lg"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <img
+                src="/images/SEO-master.png"
+                alt="SEO Master"
+                className="h-8 w-auto mr-2"
+              />
+              <span>SEOmaster</span>
+            </Link>
           </div>
-        </header>
 
-        {/* Main content */}
-        <main className="flex-1 overflow-y-auto p-6">
-          {children}
-        </main>
+          <nav className="flex flex-col gap-1 px-2 py-4">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-2 text-sm rounded-md hover:bg-accent hover:text-accent-foreground"
+              >
+                {item.icon}
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="mt-auto p-4 border-t">
+            <div className="flex items-center gap-3 mb-4">
+              <Avatar>
+                <AvatarImage
+                  src={session?.user?.image || undefined}
+                  alt={session?.user?.name || "User"}
+                />
+                <AvatarFallback>
+                  {session?.user?.name?.[0] || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col">
+                <span className="font-medium text-sm">
+                  {session?.user?.name || "User"}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {session?.user?.email || ""}
+                </span>
+              </div>
+            </div>
+
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                signOut({ callbackUrl: "/" });
+              }}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign out
+            </Button>
+          </div>
+        </div>
       </div>
+
+      {/* Main Content */}
+      <main className="flex-1 md:ml-64 pt-16 md:pt-0">
+        <div className="container mx-auto p-6">
+          {children}
+        </div>
+      </main>
     </div>
   );
 }

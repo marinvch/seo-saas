@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth/intex";
+import { auth } from "@/lib/auth";
 import { GeminiService } from "@/lib/ai/gemini-service";
 
 export async function POST(req: Request) {

@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db/prisma-client";
-import { auth } from "@/lib/auth/intex";
 import { GeminiService } from "@/lib/ai/gemini-service";
 
 export async function GET(
-  req: Request,
+  request: NextRequest,
   { params }: { params: { projectId: string; auditId: string } }
 ) {
   try {
@@ -19,33 +19,24 @@ export async function GET(
 
     const { projectId, auditId } = params;
 
-    // Check if user has access to this project
-    const project = await prisma.project.findFirst({
-      where: {
-        id: projectId,
-        organization: {
-          users: {
-            some: {
-              userId: session.user.id,
-            },
-          },
-        },
-      },
-    });
-
-    if (!project) {
-      return NextResponse.json(
-        { error: "Project not found or access denied" },
-        { status: 404 }
-      );
-    }
-
-    // Get the audit data
+    // Verify audit exists and user has access
     const audit = await prisma.siteAudit.findUnique({
-      where: {
-        id: auditId,
-        projectId,
-      },
+      where: { id: auditId },
+      include: {
+        project: {
+          include: {
+            organization: {
+              include: {
+                users: {
+                  where: {
+                    userId: session.user.id
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     });
 
     if (!audit) {
@@ -55,41 +46,33 @@ export async function GET(
       );
     }
 
-    if (audit.status !== "COMPLETED") {
+    if (audit.project.id !== projectId) {
       return NextResponse.json(
-        { error: "Audit not yet completed" },
+        { error: "Audit does not belong to the specified project" },
         { status: 400 }
       );
     }
 
-    // Check if we already have cached insights
-    const cachedInsights = audit.aiInsights as any;
-    
-    if (cachedInsights && cachedInsights.timestamp) {
-      const cacheAge = Date.now() - new Date(cachedInsights.timestamp).getTime();
-      // Use cached insights if they're less than 24 hours old
-      if (cacheAge < 24 * 60 * 60 * 1000) {
-        return NextResponse.json({ insights: cachedInsights });
-      }
+    // Check if user has access to the project's organization
+    if (audit.project.organization.users.length === 0) {
+      return NextResponse.json(
+        { error: "Access denied" },
+        { status: 403 }
+      );
     }
 
-    // Generate new insights with Gemini AI
-    const geminiService = new GeminiService();
-    const insights = await geminiService.getAuditInsights(audit);
-    
-    // Add timestamp to insights
-    const insightsWithTimestamp = {
-      ...insights,
-      timestamp: new Date().toISOString(),
-    };
+    // Initialize AI service
+    const gemini = new GeminiService();
 
-    // Cache the insights in the audit record
-    await prisma.siteAudit.update({
-      where: { id: auditId },
-      data: { aiInsights: insightsWithTimestamp },
+    // Get AI insights based on audit data
+    const insights = await gemini.getAuditInsights({
+      auditId: auditId,
+      siteUrl: audit.siteUrl,
+      issuesSummary: audit.issuesSummary as any,
+      pageResults: audit.pageResults as any,
     });
 
-    return NextResponse.json({ insights: insightsWithTimestamp });
+    return NextResponse.json({ insights });
   } catch (error) {
     console.error("Error generating AI insights:", error);
     return NextResponse.json(
