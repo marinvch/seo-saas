@@ -92,6 +92,15 @@ model Account {
   @@index([userId])
 }
 
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
 model Session {
   id           String   @id @default(uuid())
   sessionToken String   @unique
@@ -202,21 +211,21 @@ model ProjectSettings {
 }
 
 model SiteAudit {
-  id            String         @id @default(uuid())
-  projectId     String
-  siteUrl       String
-  status        AuditStatus    @default(PENDING)
-  startedAt     DateTime       @default(now())
-  completedAt   DateTime?
-  totalPages    Int            @default(0)
-  progressPercentage Int?      // Stores the current progress (0-100)
-  options       Json // Store the audit options
-  pageResults   Json? // Store the detailed page results
-  issuesSummary Json // Store the summary of issues
-  errorMessage  String? // Store error message if audit fails
-  htmlReport    String? // Path to generated HTML report
-  project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  auditHistory  AuditHistory[]
+  id                 String         @id @default(uuid())
+  projectId          String
+  siteUrl            String
+  status             AuditStatus    @default(PENDING)
+  startedAt          DateTime       @default(now())
+  completedAt        DateTime?
+  totalPages         Int            @default(0)
+  progressPercentage Int? // Stores the current progress (0-100)
+  options            Json // Store the audit options
+  pageResults        Json? // Store the detailed page results
+  issuesSummary      Json // Store the summary of issues
+  errorMessage       String? // Store error message if audit fails
+  htmlReport         String? // Path to generated HTML report
+  project            Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  auditHistory       AuditHistory[]
 
   @@index([projectId])
   @@index([status])

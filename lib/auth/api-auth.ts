@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import { Role } from '@prisma/client';
 
 // Extend NextRequest to include auth property
 declare module 'next/server' {
@@ -7,7 +8,7 @@ declare module 'next/server' {
     auth: {
       userId: string;
       email: string;
-      role: string;
+      role: Role;
     };
   }
 }
@@ -26,9 +27,9 @@ export function withApiAuth(handler: Function) {
 
       // Add auth data to request
       req.auth = {
-        userId: token.sub!,
+        userId: token.id || token.sub!,
         email: token.email as string,
-        role: token.role as string,
+        role: token.role as Role,
       };
 
       return handler(req, params);

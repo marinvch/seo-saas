@@ -22,3 +22,13 @@ declare module 'next-auth' {
     emailVerified: Date | null;
   }
 }
+
+declare module 'next-auth/jwt' {
+  /** Extend the built-in JWT types */
+  interface JWT {
+    id: string;
+    email: string;
+    role: Role;
+    emailVerified?: Date | null;
+  }
+}

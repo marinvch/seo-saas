@@ -1,16 +1,16 @@
-import './globals.css';
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import { ThemeProvider } from '../components/providers/theme-provider';
-import { AuthProvider } from '../components/providers/auth-provider';
-import ReduxProvider from '../components/providers/redux-provider';
-import { ServiceInitializer } from '../components/providers/service-initializer';
+import "./globals.css";
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import { ThemeProvider } from "../components/providers/theme-provider";
+import { AuthProvider } from "../components/providers/auth-provider";
+import ReduxProvider from "../components/providers/redux-provider";
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'SEO SaaS Platform',
-  description: 'All-in-one SEO platform for digital agencies and marketing professionals',
+  title: "SEO SaaS Platform",
+  description:
+    "All-in-one SEO platform for digital agencies and marketing professionals",
 };
 
 export default function RootLayout({
@@ -23,7 +23,6 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthProvider>
           <ReduxProvider>
-            <ServiceInitializer />
             <ThemeProvider
               attribute="class"
               defaultTheme="system"
