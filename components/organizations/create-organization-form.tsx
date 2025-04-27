@@ -30,7 +30,13 @@ import { useToast } from "@/components/ui/use-toast";
 
 const organizationSchema = z.object({
   name: z.string().min(2, "Organization name must be at least 2 characters"),
-  slug: z.string().min(2, "Slug must be at least 2 characters").regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens"),
+  slug: z
+    .string()
+    .min(2, "Slug must be at least 2 characters")
+    .regex(
+      /^[a-z0-9-]+$/,
+      "Slug can only contain lowercase letters, numbers, and hyphens"
+    ),
 });
 
 type FormData = z.infer<typeof organizationSchema>;
@@ -39,7 +45,9 @@ interface CreateOrganizationDialogProps {
   onSuccess?: () => void;
 }
 
-export function CreateOrganizationDialog({ onSuccess }: CreateOrganizationDialogProps) {
+export function CreateOrganizationDialog({
+  onSuccess,
+}: CreateOrganizationDialogProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const router = useRouter();
   const { toast } = useToast();
@@ -63,11 +71,25 @@ export function CreateOrganizationDialog({ onSuccess }: CreateOrganizationDialog
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
+        if (response.status === 409 && errorData?.message?.includes("slug already exists")) {
+          toast({
+            title: "Organization Exists",
+            description: "An organization with this slug already exists. Redirecting to project creation...",
+            variant: "default",
+          });
+
+          setIsOpen(false);
+          form.reset();
+
+          // Redirect to project creation for the existing organization
+          router.push(`/dashboard/projects/new?organizationSlug=${data.slug}`);
+          return;
+        }
         throw new Error(errorData?.message || "Failed to create organization");
       }
 
       const result = await response.json();
-      
+
       toast({
         title: "Organization created",
         description: "Your organization has been created successfully.",
@@ -75,19 +97,22 @@ export function CreateOrganizationDialog({ onSuccess }: CreateOrganizationDialog
 
       setIsOpen(false);
       form.reset();
-      
+
       // Call onSuccess if provided
       if (onSuccess) {
         onSuccess();
       }
-      
+
       // Refresh the page and redirect to project creation
       router.refresh();
       router.push("/dashboard/projects/new");
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create organization. Please try again.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred.",
         variant: "destructive",
       });
     }
@@ -127,12 +152,14 @@ export function CreateOrganizationDialog({ onSuccess }: CreateOrganizationDialog
                 <FormItem>
                   <FormLabel>Organization Slug</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="acme" 
+                    <Input
+                      placeholder="acme"
                       {...field}
                       onChange={(e) => {
                         // Automatically convert to lowercase and replace invalid characters
-                        const value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+                        const value = e.target.value
+                          .toLowerCase()
+                          .replace(/[^a-z0-9-]/g, "-");
                         field.onChange(value);
                       }}
                     />

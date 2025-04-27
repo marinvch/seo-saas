@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { createProject } from '@/store/slices/projects-slice';
-import { selectCurrentOrganization } from '@/store/slices/user-slice';
+import { selectCurrentOrganization, selectOrganizations, setCurrentOrganization } from '@/store/slices/user-slice';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -54,19 +54,29 @@ export function CreateProjectForm() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const organizations = useAppSelector(selectOrganizations);
   const currentOrganization = useAppSelector(selectCurrentOrganization);
+  
+  // Get organization slug from URL query parameters if provided
+  const organizationSlug = searchParams.get('organizationSlug');
 
-  // Redirect if no organization is selected
+  // Find the organization by slug if provided in query params
   useEffect(() => {
-    if (!currentOrganization) {
-      toast({
-        title: 'Error',
-        description: 'Please select an organization first.',
-        variant: 'destructive',
-      });
-      router.push('/dashboard');
+    if (organizationSlug && organizations.length > 0) {
+      const orgBySlug = organizations.find(org => org.slug === organizationSlug);
+      if (orgBySlug) {
+        dispatch(setCurrentOrganization(orgBySlug));
+      }
     }
-  }, [currentOrganization, router, toast]);
+  }, [organizationSlug, organizations, dispatch]);
+
+  // Set default organization if there's only one
+  useEffect(() => {
+    if (organizations.length === 1 && !currentOrganization) {
+      dispatch(setCurrentOrganization(organizations[0]));
+    }
+  }, [organizations, currentOrganization, dispatch]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(projectSchema),
@@ -80,11 +90,27 @@ export function CreateProjectForm() {
     },
   });
 
+  // Update form when current organization changes
+  useEffect(() => {
+    if (currentOrganization?.id) {
+      form.setValue('organizationId', currentOrganization.id);
+    }
+  }, [currentOrganization, form]);
+
+  // Handle organization change
+  const handleOrganizationChange = (orgId: string) => {
+    const selectedOrg = organizations.find(org => org.id === orgId);
+    if (selectedOrg) {
+      dispatch(setCurrentOrganization(selectedOrg));
+      form.setValue('organizationId', orgId);
+    }
+  };
+
   async function onSubmit(data: FormValues) {
-    if (!currentOrganization) {
+    if (!data.organizationId) {
       toast({
         title: 'Error',
-        description: 'No organization selected.',
+        description: 'Please select an organization for this project.',
         variant: 'destructive',
       });
       return;
@@ -92,10 +118,7 @@ export function CreateProjectForm() {
 
     setIsSubmitting(true);
     try {
-      const project = await dispatch(createProject({
-        ...data,
-        organizationId: currentOrganization.id,
-      })).unwrap();
+      const project = await dispatch(createProject(data)).unwrap();
       
       toast({
         title: 'Project Created',
@@ -105,9 +128,10 @@ export function CreateProjectForm() {
       // Redirect to the project dashboard
       router.push(`/dashboard/projects/${project.id}`);
     } catch (error) {
+      console.error('Project creation error:', error);
       toast({
         title: 'Error',
-        description: 'Failed to create project. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to create project. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -120,6 +144,52 @@ export function CreateProjectForm() {
       <CardContent className="pt-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {organizations.length > 1 && (
+              <FormField
+                control={form.control}
+                name="organizationId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Organization</FormLabel>
+                    <Select 
+                      onValueChange={handleOrganizationChange} 
+                      value={field.value}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select organization" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {organizations.map((org) => (
+                          <SelectItem key={org.id} value={org.id}>
+                            {org.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Select which organization this project belongs to
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {organizations.length === 1 && (
+              <FormItem>
+                <FormLabel>Organization</FormLabel>
+                <div className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background">
+                  {organizations[0]?.name || "Your Organization"}
+                </div>
+                <FormDescription>
+                  This project will be created in your organization
+                </FormDescription>
+              </FormItem>
+            )}
+
             <FormField
               control={form.control}
               name="name"

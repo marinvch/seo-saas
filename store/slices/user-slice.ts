@@ -1,9 +1,17 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { OrganizationUser } from '@prisma/client';
+import type { RootState } from '../store';
+
+interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  // Add other needed organization properties
+}
 
 interface UserState {
-  organizations: OrganizationUser[];
-  currentOrganization: OrganizationUser['organization'] | null;
+  organizations: Organization[];
+  currentOrganization: Organization | null;
   loading: boolean;
   error: string | null;
 }
@@ -45,13 +53,13 @@ const userSlice = createSlice({
         state.loading = false;
         state.error = null;
         
-        // Ensure action.payload.data exists and is an array before assigning
-        if (action.payload?.data && Array.isArray(action.payload.data)) {
-          state.organizations = action.payload.data;
+        // Handle organizations data directly as returned from the API
+        if (action.payload && Array.isArray(action.payload)) {
+          state.organizations = action.payload;
           
           // Set current organization to first one if none is selected and organizations exist
-          if (!state.currentOrganization && state.organizations.length > 0) {
-            state.currentOrganization = state.organizations[0].organization;
+          if (!state.currentOrganization && action.payload.length > 0) {
+            state.currentOrganization = action.payload[0];
           }
         }
       })
@@ -63,4 +71,9 @@ const userSlice = createSlice({
 });
 
 export const { setCurrentOrganization } = userSlice.actions;
+
+// Add a selector for getting the current organization
+export const selectCurrentOrganization = (state: RootState) => state.user.currentOrganization;
+export const selectOrganizations = (state: RootState) => state.user.organizations;
+
 export default userSlice.reducer;
