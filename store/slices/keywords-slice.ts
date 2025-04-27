@@ -1,379 +1,360 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '../store';
 
-// Keyword interface matching Prisma schema
+// Types
 export interface Keyword {
   id: string;
   projectId: string;
   keyword: string;
-  volume?: number | null;
-  difficulty?: number | null;
-  cpc?: number | null;
-  intent?: string | null;
-  createdAt: string;
-  updatedAt: string;
+  volume?: number;
+  difficulty?: number;
+  cpc?: number;
+  intent?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-// Rank tracking interface matching Prisma schema
-export interface RankTracking {
-  id: string;
-  projectId: string;
-  keywordId: string;
-  rank?: number | null;
-  previousRank?: number | null;
-  change?: number | null;
-  url?: string | null;
-  date: string;
-  searchEngine: string;
-}
-
-// Keyword research result interface
-export interface KeywordResearchResult {
+export interface KeywordSuggestion {
   keyword: string;
-  volume?: number | null;
-  difficulty?: number | null;
-  cpc?: number | null;
-  intent?: string | null;
-  relatedKeywords?: string[];
+  volume?: number;
+  difficulty?: number;
+  cpc?: number;
+  intent?: string;
 }
 
-// Interface for keywords state slice
-interface KeywordsState {
+export interface KeywordsState {
   keywords: Keyword[];
-  selectedKeywords: string[]; // Array of keyword IDs
-  rankHistory: RankTracking[];
-  researchResults: KeywordResearchResult[];
-  filters: {
-    searchQuery: string;
-    minVolume?: number;
-    maxVolume?: number;
-    minDifficulty?: number;
-    maxDifficulty?: number;
-    intent?: string[];
-  };
-  isLoading: boolean;
-  isResearching: boolean;
+  selectedKeyword: Keyword | null;
+  loading: boolean;
   error: string | null;
+  researchResults: KeywordSuggestion[] | null;
+  researchLoading: boolean;
 }
 
-// Initial state for keywords slice
+// Initial state
 const initialState: KeywordsState = {
   keywords: [],
-  selectedKeywords: [],
-  rankHistory: [],
-  researchResults: [],
-  filters: {
-    searchQuery: '',
-    minVolume: undefined,
-    maxVolume: undefined,
-    minDifficulty: undefined,
-    maxDifficulty: undefined,
-    intent: undefined,
-  },
-  isLoading: false,
-  isResearching: false,
+  selectedKeyword: null,
+  loading: false,
   error: null,
+  researchResults: null,
+  researchLoading: false,
 };
 
-// Async thunk for fetching keywords for a project
-export const fetchProjectKeywords = createAsyncThunk(
-  'keywords/fetchProjectKeywords',
+// Async thunks
+export const fetchKeywords = createAsyncThunk(
+  'keywords/fetchKeywords',
   async (projectId: string, { rejectWithValue }) => {
     try {
       const response = await fetch(`/api/projects/${projectId}/keywords`);
       
       if (!response.ok) {
-        throw new Error('Failed to fetch project keywords');
+        const errorData = await response.json();
+        return rejectWithValue(errorData.error || 'Failed to fetch keywords');
       }
       
-      const data = await response.json();
-      return data.keywords;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to fetch project keywords');
+      return await response.json();
+    } catch (error) {
+      return rejectWithValue((error as Error).message || 'Failed to fetch keywords');
     }
   }
 );
 
-// Async thunk for adding a keyword to a project
+export const fetchKeyword = createAsyncThunk(
+  'keywords/fetchKeyword',
+  async ({ projectId, keywordId }: { projectId: string, keywordId: string }, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/projects/${projectId}/keywords/${keywordId}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        return rejectWithValue(errorData.error || 'Failed to fetch keyword');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      return rejectWithValue((error as Error).message || 'Failed to fetch keyword');
+    }
+  }
+);
+
 export const addKeyword = createAsyncThunk(
   'keywords/addKeyword',
-  async (keywordData: { projectId: string; keyword: string }, { rejectWithValue }) => {
+  async (data: { projectId: string; keyword: string; volume?: number; difficulty?: number; cpc?: number; intent?: string }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/projects/${keywordData.projectId}/keywords`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ keyword: keywordData.keyword }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to add keyword');
-      }
-      
-      const data = await response.json();
-      return data;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to add keyword');
-    }
-  }
-);
-
-// Async thunk for bulk adding keywords
-export const bulkAddKeywords = createAsyncThunk(
-  'keywords/bulkAddKeywords',
-  async (keywordData: { projectId: string; keywords: string[] }, { rejectWithValue }) => {
-    try {
-      const response = await fetch(`/api/projects/${keywordData.projectId}/keywords/bulk-add`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ keywords: keywordData.keywords }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to bulk add keywords');
-      }
-      
-      const data = await response.json();
-      return data.keywords;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to bulk add keywords');
-    }
-  }
-);
-
-// Async thunk for performing keyword research
-export const researchKeywords = createAsyncThunk(
-  'keywords/researchKeywords',
-  async (
-    researchData: { 
-      projectId: string; 
-      seed: string; 
-      options?: { 
-        country?: string; 
-        language?: string; 
-        limit?: number;
-      }
-    }, 
-    { rejectWithValue }
-  ) => {
-    try {
-      const response = await fetch(`/api/projects/${researchData.projectId}/keywords/research`, {
+      const response = await fetch(`/api/projects/${data.projectId}/keywords`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          seed: researchData.seed,
-          options: researchData.options || {},
+          keyword: data.keyword,
+          volume: data.volume,
+          difficulty: data.difficulty,
+          cpc: data.cpc,
+          intent: data.intent,
         }),
       });
       
       if (!response.ok) {
-        throw new Error('Failed to research keywords');
+        const errorData = await response.json();
+        return rejectWithValue(errorData.error || 'Failed to add keyword');
       }
       
-      const data = await response.json();
-      return data.results;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to research keywords');
+      return await response.json();
+    } catch (error) {
+      return rejectWithValue((error as Error).message || 'Failed to add keyword');
     }
   }
 );
 
-// Async thunk for fetching rank tracking data
-export const fetchKeywordRankings = createAsyncThunk(
-  'keywords/fetchKeywordRankings',
-  async ({ projectId, keywordId, period = 30 }: { projectId: string; keywordId?: string; period?: number }, { rejectWithValue }) => {
+export const updateKeyword = createAsyncThunk(
+  'keywords/updateKeyword',
+  async (
+    data: { 
+      projectId: string; 
+      keywordId: string; 
+      updates: { 
+        keyword?: string; 
+        volume?: number; 
+        difficulty?: number; 
+        cpc?: number; 
+        intent?: string 
+      } 
+    }, 
+    { rejectWithValue }
+  ) => {
     try {
-      const url = keywordId
-        ? `/api/projects/${projectId}/keywords/${keywordId}/rankings?period=${period}`
-        : `/api/projects/${projectId}/keywords/rankings?period=${period}`;
-      
-      const response = await fetch(url);
+      const response = await fetch(`/api/projects/${data.projectId}/keywords/${data.keywordId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data.updates),
+      });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch keyword rankings');
+        const errorData = await response.json();
+        return rejectWithValue(errorData.error || 'Failed to update keyword');
       }
       
-      const data = await response.json();
-      return data.rankings;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to fetch keyword rankings');
+      return await response.json();
+    } catch (error) {
+      return rejectWithValue((error as Error).message || 'Failed to update keyword');
     }
   }
 );
 
-// Keywords slice for managing keyword data
+export const deleteKeyword = createAsyncThunk(
+  'keywords/deleteKeyword',
+  async ({ projectId, keywordId }: { projectId: string; keywordId: string }, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/projects/${projectId}/keywords/${keywordId}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        return rejectWithValue(errorData.error || 'Failed to delete keyword');
+      }
+      
+      return { keywordId }; // Return the id to remove from state
+    } catch (error) {
+      return rejectWithValue((error as Error).message || 'Failed to delete keyword');
+    }
+  }
+);
+
+export const bulkAddKeywords = createAsyncThunk(
+  'keywords/bulkAddKeywords',
+  async ({ projectId, keywords }: { projectId: string; keywords: string[] }, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/projects/${projectId}/keywords/bulk`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ keywords }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        return rejectWithValue(errorData.error || 'Failed to add keywords');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      return rejectWithValue((error as Error).message || 'Failed to add keywords');
+    }
+  }
+);
+
+export const researchKeywords = createAsyncThunk(
+  'keywords/researchKeywords',
+  async ({ projectId, seed }: { projectId: string; seed: string }, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/projects/${projectId}/keywords/research`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ seed }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        return rejectWithValue(errorData.error || 'Failed to research keywords');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      return rejectWithValue((error as Error).message || 'Failed to research keywords');
+    }
+  }
+);
+
+// Slice
 const keywordsSlice = createSlice({
   name: 'keywords',
   initialState,
   reducers: {
-    // Update selected keywords
     selectKeyword: (state, action: PayloadAction<string>) => {
-      if (!state.selectedKeywords.includes(action.payload)) {
-        state.selectedKeywords.push(action.payload);
-      }
+      state.selectedKeyword = state.keywords.find(k => k.id === action.payload) || null;
     },
-    
-    deselectKeyword: (state, action: PayloadAction<string>) => {
-      state.selectedKeywords = state.selectedKeywords.filter(id => id !== action.payload);
+    clearSelectedKeyword: (state) => {
+      state.selectedKeyword = null;
     },
-    
-    clearSelectedKeywords: (state) => {
-      state.selectedKeywords = [];
-    },
-    
-    // Update filters
-    setSearchQuery: (state, action: PayloadAction<string>) => {
-      state.filters.searchQuery = action.payload;
-    },
-    
-    setVolumeFilter: (state, action: PayloadAction<{ min?: number; max?: number }>) => {
-      state.filters.minVolume = action.payload.min;
-      state.filters.maxVolume = action.payload.max;
-    },
-    
-    setDifficultyFilter: (state, action: PayloadAction<{ min?: number; max?: number }>) => {
-      state.filters.minDifficulty = action.payload.min;
-      state.filters.maxDifficulty = action.payload.max;
-    },
-    
-    setIntentFilter: (state, action: PayloadAction<string[] | undefined>) => {
-      state.filters.intent = action.payload;
-    },
-    
-    clearFilters: (state) => {
-      state.filters = initialState.filters;
-    },
-    
-    // Clear research results
     clearResearchResults: (state) => {
-      state.researchResults = [];
+      state.researchResults = null;
     },
   },
   extraReducers: (builder) => {
-    // Fetch project keywords cases
-    builder
-      .addCase(fetchProjectKeywords.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(fetchProjectKeywords.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.keywords = action.payload;
-      })
-      .addCase(fetchProjectKeywords.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string;
-      })
-      
-      // Add keyword cases
-      .addCase(addKeyword.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(addKeyword.fulfilled, (state, action) => {
-        state.isLoading = false;
+    // Fetch keywords cases
+    builder.addCase(fetchKeywords.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(fetchKeywords.fulfilled, (state, action) => {
+      state.keywords = action.payload;
+      state.loading = false;
+    });
+    builder.addCase(fetchKeywords.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
+    
+    // Fetch single keyword cases
+    builder.addCase(fetchKeyword.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(fetchKeyword.fulfilled, (state, action) => {
+      // Add to keywords array if not present
+      const existingIndex = state.keywords.findIndex(k => k.id === action.payload.id);
+      if (existingIndex >= 0) {
+        state.keywords[existingIndex] = action.payload;
+      } else {
         state.keywords.push(action.payload);
-      })
-      .addCase(addKeyword.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string;
-      })
-      
-      // Bulk add keywords cases
-      .addCase(bulkAddKeywords.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(bulkAddKeywords.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.keywords = [...state.keywords, ...action.payload];
-      })
-      .addCase(bulkAddKeywords.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string;
-      })
-      
-      // Research keywords cases
-      .addCase(researchKeywords.pending, (state) => {
-        state.isResearching = true;
-        state.error = null;
-      })
-      .addCase(researchKeywords.fulfilled, (state, action) => {
-        state.isResearching = false;
-        state.researchResults = action.payload;
-      })
-      .addCase(researchKeywords.rejected, (state, action) => {
-        state.isResearching = false;
-        state.error = action.payload as string;
-      })
-      
-      // Fetch keyword rankings cases
-      .addCase(fetchKeywordRankings.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(fetchKeywordRankings.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.rankHistory = action.payload;
-      })
-      .addCase(fetchKeywordRankings.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string;
-      });
+      }
+      state.selectedKeyword = action.payload;
+      state.loading = false;
+    });
+    builder.addCase(fetchKeyword.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
+    
+    // Add keyword cases
+    builder.addCase(addKeyword.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(addKeyword.fulfilled, (state, action) => {
+      state.keywords.push(action.payload);
+      state.loading = false;
+    });
+    builder.addCase(addKeyword.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
+    
+    // Update keyword cases
+    builder.addCase(updateKeyword.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(updateKeyword.fulfilled, (state, action) => {
+      const index = state.keywords.findIndex(k => k.id === action.payload.id);
+      if (index >= 0) {
+        state.keywords[index] = action.payload;
+      }
+      if (state.selectedKeyword && state.selectedKeyword.id === action.payload.id) {
+        state.selectedKeyword = action.payload;
+      }
+      state.loading = false;
+    });
+    builder.addCase(updateKeyword.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
+    
+    // Delete keyword cases
+    builder.addCase(deleteKeyword.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(deleteKeyword.fulfilled, (state, action) => {
+      state.keywords = state.keywords.filter(k => k.id !== action.payload.keywordId);
+      if (state.selectedKeyword && state.selectedKeyword.id === action.payload.keywordId) {
+        state.selectedKeyword = null;
+      }
+      state.loading = false;
+    });
+    builder.addCase(deleteKeyword.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
+    
+    // Bulk add keywords cases
+    builder.addCase(bulkAddKeywords.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(bulkAddKeywords.fulfilled, (state, action) => {
+      state.keywords = [...state.keywords, ...action.payload];
+      state.loading = false;
+    });
+    builder.addCase(bulkAddKeywords.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
+    
+    // Research keywords cases
+    builder.addCase(researchKeywords.pending, (state) => {
+      state.researchLoading = true;
+      state.error = null;
+    });
+    builder.addCase(researchKeywords.fulfilled, (state, action) => {
+      state.researchResults = action.payload;
+      state.researchLoading = false;
+    });
+    builder.addCase(researchKeywords.rejected, (state, action) => {
+      state.researchLoading = false;
+      state.error = action.payload as string;
+    });
   },
 });
 
-// Export actions and reducer
-export const {
-  selectKeyword,
-  deselectKeyword,
-  clearSelectedKeywords,
-  setSearchQuery,
-  setVolumeFilter,
-  setDifficultyFilter,
-  setIntentFilter,
-  clearFilters,
-  clearResearchResults,
-} = keywordsSlice.actions;
-
 // Selectors
-export const selectFilteredKeywords = (state: RootState) => {
-  const { keywords, filters } = state.keywords;
-  
-  return keywords.filter(keyword => {
-    // Filter by search query
-    if (filters.searchQuery && !keyword.keyword.toLowerCase().includes(filters.searchQuery.toLowerCase())) {
-      return false;
-    }
-    
-    // Filter by volume
-    if (filters.minVolume !== undefined && keyword.volume !== null && keyword.volume < filters.minVolume) {
-      return false;
-    }
-    if (filters.maxVolume !== undefined && keyword.volume !== null && keyword.volume > filters.maxVolume) {
-      return false;
-    }
-    
-    // Filter by difficulty
-    if (filters.minDifficulty !== undefined && keyword.difficulty !== null && keyword.difficulty < filters.minDifficulty) {
-      return false;
-    }
-    if (filters.maxDifficulty !== undefined && keyword.difficulty !== null && keyword.difficulty > filters.maxDifficulty) {
-      return false;
-    }
-    
-    // Filter by intent
-    if (filters.intent && filters.intent.length > 0 && keyword.intent) {
-      return filters.intent.includes(keyword.intent);
-    }
-    
-    return true;
-  });
-};
+export const selectAllKeywords = (state: RootState) => state.keywords.keywords;
+export const selectSelectedKeyword = (state: RootState) => state.keywords.selectedKeyword;
+export const selectKeywordsLoading = (state: RootState) => state.keywords.loading;
+export const selectKeywordsError = (state: RootState) => state.keywords.error;
+export const selectResearchResults = (state: RootState) => state.keywords.researchResults;
+export const selectResearchLoading = (state: RootState) => state.keywords.researchLoading;
 
+// Actions
+export const { selectKeyword, clearSelectedKeyword, clearResearchResults } = keywordsSlice.actions;
+
+// Reducer
 export default keywordsSlice.reducer;
