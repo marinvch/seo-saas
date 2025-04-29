@@ -1,106 +1,127 @@
-'use client';
+import { notFound } from "next/navigation";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth/auth";
+import { PrismaClient } from "@prisma/client";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AuditHistory, AuditHistorySkeleton } from "@/components/audits/audit-history";
+import { PageHeader, PageHeaderDescription, PageHeaderHeading } from "@/components/page-header";
+import Link from "next/link";
+import { RefreshCw, Plus } from "lucide-react";
+import { AuditHistoryEntry } from "@/types/audit";
 
-import { useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import {
-  startSiteAudit,
-  fetchAuditHistory,
-  selectCurrentAudit,
-  selectAuditHistory,
-  selectAuditLoading,
-} from '@/store/slices/audits-slice';
-import { Button } from '@/components/ui/button';
-import { AuditProgress } from '@/components/audits/audit-progress';
-import { SEOIssuesSummary } from '@/components/audits/seo-issues-summary';
-import { AuditHistory } from '@/components/audits/audit-history';
-import { Play, Loader2 } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+const prisma = new PrismaClient();
 
-export default function AuditDashboard() {
-  const { projectId } = useParams();
-  const router = useRouter();
-  const dispatch = useAppDispatch();
-  const { toast } = useToast();
-  
-  const currentAudit = useAppSelector(selectCurrentAudit);
-  const auditHistory = useAppSelector(selectAuditHistory);
-  const isLoading = useAppSelector(selectAuditLoading);
-
-  useEffect(() => {
-    if (projectId) {
-      dispatch(fetchAuditHistory(projectId as string));
-    }
-  }, [dispatch, projectId]);
-
-  const handleStartAudit = async () => {
-    if (!projectId) return;
-
-    try {
-      await dispatch(startSiteAudit({ 
-        projectId: projectId as string,
-        options: {
-          maxPages: 1000,
-          ignoreRobotsTxt: false
-        }
-      })).unwrap();
-      
-      toast({
-        title: "Audit Started",
-        description: "The site audit has been initiated successfully.",
-      });
-    } catch (error) {
-      toast({
-        title: "Error Starting Audit",
-        description: "Failed to start the site audit. Please try again.",
-        variant: "destructive",
-      });
-    }
+interface PageProps {
+  params: {
+    projectId: string;
   };
+}
 
-  const handleViewDetails = (auditId: string) => {
-    router.push(`/dashboard/projects/${projectId}/audits/${auditId}`);
-  };
+async function getProject(projectId: string, userId: string) {
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    include: {
+      organization: true,
+    },
+  });
+
+  if (!project) return null;
+
+  // Check if user has access to this project
+  const hasAccess = await prisma.organizationUser.findFirst({
+    where: {
+      organizationId: project.organizationId,
+      userId,
+    },
+  });
+
+  if (!hasAccess) return null;
+
+  return project;
+}
+
+async function getAuditHistory(projectId: string): Promise<AuditHistoryEntry[]> {
+  const audits = await prisma.auditHistory.findMany({
+    where: { projectId },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return audits.map(audit => {
+    // Make sure to cast the issuesSummary to the correct type
+    const issuesSummaryObj = audit.issuesSummary as any;
+    
+    return {
+      id: audit.auditId,
+      projectId,
+      date: audit.createdAt.toISOString(),
+      totalPages: audit.totalPages,
+      issuesSummary: {
+        critical: issuesSummaryObj?.critical || 0,
+        warning: issuesSummaryObj?.warning || 0,
+        info: issuesSummaryObj?.info || 0,
+        total: issuesSummaryObj?.total || 0
+      }
+    };
+  });
+}
+
+export default async function ProjectAuditsPage({ params }: PageProps) {
+  const { projectId } = params;
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
+    return notFound();
+  }
+
+  const project = await getProject(projectId, session.user.id);
+
+  if (!project) {
+    return notFound();
+  }
+
+  const auditHistory = await getAuditHistory(projectId);
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Site Audit</h1>
-        <Button 
-          onClick={handleStartAudit} 
-          disabled={isLoading || currentAudit?.status === 'IN_PROGRESS'}
-        >
-          {isLoading ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          ) : (
-            <Play className="w-4 h-4 mr-2" />
-          )}
-          Start New Audit
+    <div className="container py-4 md:py-8 space-y-6">
+      <div className="flex items-center justify-between">
+        <PageHeader>
+          <PageHeaderHeading>Site Audits</PageHeaderHeading>
+          <PageHeaderDescription>
+            Run comprehensive SEO audits and track your site's progress over time
+          </PageHeaderDescription>
+        </PageHeader>
+
+        <Button asChild className="ml-auto">
+          <Link href={`/dashboard/projects/${projectId}/audits/new`}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Audit
+          </Link>
         </Button>
       </div>
 
-      {/* Current Audit Progress */}
-      {currentAudit && ['PENDING', 'IN_PROGRESS'].includes(currentAudit.status) && (
-        <AuditProgress 
-          projectId={projectId as string} 
-          className="mb-6"
-        />
-      )}
-
-      {/* Latest Audit Results */}
-      {currentAudit?.status === 'COMPLETED' && currentAudit.issuesSummary && (
-        <SEOIssuesSummary 
-          issues={currentAudit.issuesSummary.issues}
-          totalPages={currentAudit.totalPages}
-          className="mb-6"
-        />
-      )}
-
-      {/* Audit History */}
-      <AuditHistory 
-        audits={auditHistory}
-        onViewDetails={handleViewDetails}
-      />
+      <Tabs defaultValue="history">
+        <TabsList>
+          <TabsTrigger value="history">History</TabsTrigger>
+          <TabsTrigger value="scheduled">Scheduled Audits</TabsTrigger>
+        </TabsList>
+        <TabsContent value="history" className="mt-6">
+          <AuditHistory audits={auditHistory} projectId={projectId} />
+        </TabsContent>
+        <TabsContent value="scheduled" className="mt-6">
+          <Card className="p-6 text-center">
+            <h3 className="text-lg font-medium mb-2">Scheduled Audits</h3>
+            <p className="text-muted-foreground mb-4">
+              Set up automatic audits to run on a schedule. This feature is coming soon.
+            </p>
+            <Button variant="outline" disabled>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Set Up Schedule
+            </Button>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
