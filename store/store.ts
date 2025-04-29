@@ -1,55 +1,43 @@
 import { configureStore } from '@reduxjs/toolkit';
-import { setupListeners } from '@reduxjs/toolkit/query';
-import { persistReducer, persistStore } from 'redux-persist';
+import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
-import { combineReducers } from '@reduxjs/toolkit';
-
-// Import feature slices
-import uiReducer from './slices/ui-slice';
+import { combineReducers } from 'redux';
+import userReducer from './slices/user-slice';
 import projectsReducer from './slices/projects-slice';
 import auditsReducer from './slices/audits-slice';
 import keywordsReducer from './slices/keywords-slice';
-import userReducer from './slices/user-slice';
+import uiReducer from './slices/ui-slice';
+import rankTrackingReducer from './slices/rank-tracking-slice';
 
-// Configure persist options
+// Configure persistence for specific reducers
 const persistConfig = {
   key: 'root',
   storage,
-  whitelist: ['ui', 'user'], // Only persist these reducers
+  // Only persist UI state by default
+  // Add other reducers here if you want them to persist
+  whitelist: ['ui'],
 };
 
-// Combine reducers
 const rootReducer = combineReducers({
-  ui: uiReducer,
+  user: userReducer,
   projects: projectsReducer,
   audits: auditsReducer,
   keywords: keywordsReducer,
-  user: userReducer,
+  ui: uiReducer,
+  rankTracking: rankTrackingReducer,
 });
 
-// Create persisted reducer
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 
-/**
- * Configure the Redux store with all feature slices and middleware
- */
 export const store = configureStore({
   reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: {
-        // Ignore these action types for serializability checks
-        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
-      },
+      serializableCheck: false,
     }),
 });
 
-// Enable refetchOnFocus/refetchOnReconnect for RTK Query
-setupListeners(store.dispatch);
-
-// Create persisted store
 export const persistor = persistStore(store);
 
-// Export types for use in typed hooks
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

@@ -1,34 +1,42 @@
-import { Configuration, PlaywrightCrawlerOptions } from 'crawlee';
+import { Browser, chromium } from 'playwright';
 
-export const crawlerConfig: PlaywrightCrawlerOptions = {
-    requestHandlerTimeoutSecs: 180,
-    maxRequestRetries: 3,
-    maxRequestsPerCrawl: 1000,
-    minConcurrency: 1,
-    maxConcurrency: 5,
-};
-
-export const defaultHeaders = {
-    'User-Agent': 'SEOMaster Audit Bot/1.0 (+https://seomaster.com/bot)',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-    'Accept-Language': 'en-US,en;q=0.5',
-};
-
-export interface SEOPageData {
-    url: string;
-    title: string | null;
-    metaDescription: string | null;
-    h1: string | null;
-    h2Count: number;
-    wordCount: number;
-    imageCount: number;
-    imagesWithoutAlt: number;
-    internalLinks: number;
-    externalLinks: number;
-    statusCode: number;
-    loadTime: number;
-    canonical: string | null;
-    structured_data: any[];
-    headers: Record<string, string>;
-    seoIssues: string[];
+/**
+ * Creates and configures a Playwright browser instance for web crawling
+ * 
+ * @returns A configured Playwright browser instance
+ */
+export async function createBrowser(): Promise<Browser> {
+  return chromium.launch({
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+    ],
+    timeout: 60000,
+  });
 }
+
+/**
+ * Default user agent to use for crawling to appear as a regular browser
+ */
+export const DEFAULT_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36';
+
+/**
+ * Configuration for rate limiting to avoid being blocked
+ */
+export const RATE_LIMIT_CONFIG = {
+  minDelayMs: 500,  // Minimum delay between requests
+  maxDelayMs: 3000, // Maximum delay between requests
+  maxConcurrency: 2 // Maximum concurrent requests
+};
+
+/**
+ * Default timeout settings for various operations
+ */
+export const TIMEOUT_CONFIG = {
+  navigationTimeoutSecs: 60,
+  requestHandlerTimeoutSecs: 180,
+  pageLoadTimeoutMs: 30000
+};

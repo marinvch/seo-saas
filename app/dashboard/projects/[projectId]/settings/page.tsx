@@ -1,78 +1,110 @@
-"use client";
+import { notFound } from "next/navigation";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth/auth";
+import { PrismaClient } from "@prisma/client";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// Fix imports by using explicit imports from each file
+import { 
+  PageHeader, 
+  PageHeaderDescription, 
+  PageHeaderHeading 
+} from "@/components/page-header";
+import { ProjectGeneralSettings } from "@/components/projects/project-general-settings";
+import { ProjectAuditSettings } from "@/components/projects/project-audit-settings";
+import { ProjectIntegrationSettings } from "@/components/projects/project-integration-settings";
+import { ProjectTeamSettings } from "@/components/projects/project-team-settings";
+import { ProjectDangerZone } from "@/components/projects/project-danger-zone";
 
-import { useEffect, useState } from 'react';
-import { notFound, useRouter } from 'next/navigation';
-import { ProjectSettingsForm } from '@/components/projects/project-settings-form';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft } from 'lucide-react';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { fetchProjectById, selectSelectedProject } from '@/store/slices/projects-slice';
+const prisma = new PrismaClient();
 
-interface ProjectSettingsPageProps {
+interface PageProps {
   params: {
     projectId: string;
   };
 }
 
-export default function ProjectSettingsPage({ params }: ProjectSettingsPageProps) {
-  const router = useRouter();
-  const dispatch = useAppDispatch();
-  const project = useAppSelector(selectSelectedProject);
-  const [isLoading, setIsLoading] = useState(true);
+async function getProject(projectId: string, userId: string) {
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    include: {
+      organization: true,
+      projectSettings: true,
+    },
+  });
 
-  // Fetch project data
-  useEffect(() => {
-    const loadProject = async () => {
-      try {
-        setIsLoading(true);
-        await dispatch(fetchProjectById(params.projectId)).unwrap();
-      } catch (error) {
-        console.error('Failed to load project:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    loadProject();
-  }, [dispatch, params.projectId]);
+  if (!project) return null;
 
-  // Handle the case where project is not found
-  if (!isLoading && !project) {
-    notFound();
+  // Check if user has access to this project
+  const hasAccess = await prisma.organizationUser.findFirst({
+    where: {
+      organizationId: project.organizationId,
+      userId,
+    },
+  });
+
+  if (!hasAccess) return null;
+
+  return project;
+}
+
+export default async function ProjectSettingsPage({ params }: PageProps) {
+  const { projectId } = params;
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
+    return notFound();
   }
 
-  return (
-    <div className="container py-6">
-      <div className="mb-6">
-        <Button
-          variant="ghost"
-          className="mb-4"
-          onClick={() => router.push(`/dashboard/projects/${params.projectId}`)}
-        >
-          <ChevronLeft className="mr-2 h-4 w-4" />
-          Back to Project
-        </Button>
-        
-        <h1 className="text-3xl font-bold mb-2">Project Settings</h1>
-        <p className="text-muted-foreground">
-          {project?.name && `Configure settings for ${project.name}`}
-        </p>
-      </div>
+  const project = await getProject(projectId, session.user.id);
 
-      {isLoading ? (
-        <div className="flex items-center justify-center p-8">
-          <p>Loading project settings...</p>
-        </div>
-      ) : project && project.projectSettings ? (
-        <ProjectSettingsForm 
-          projectId={project.id} 
-          initialSettings={project.projectSettings} 
-        />
-      ) : (
-        <div className="p-4 border rounded-md bg-amber-50 text-amber-800">
-          Settings not found for this project. Please try refreshing the page.
-        </div>
-      )}
+  if (!project) {
+    return notFound();
+  }
+
+  // Get project settings or create default settings object
+  const settings = project.projectSettings || {
+    id: "",
+    projectId: project.id,
+    rankTrackingFreq: "WEEKLY",
+    autoAuditFrequency: "WEEKLY",
+    emailAlerts: true,
+    slackWebhookUrl: null,
+    integrations: null,
+  };
+
+  return (
+    <div className="container py-4 md:py-8 space-y-6">
+      <PageHeader>
+        <PageHeaderHeading>Project Settings</PageHeaderHeading>
+        <PageHeaderDescription>
+          Configure your project settings and integrations
+        </PageHeaderDescription>
+      </PageHeader>
+
+      <Tabs defaultValue="general">
+        <TabsList className="w-full justify-start">
+          <TabsTrigger value="general">General</TabsTrigger>
+          <TabsTrigger value="audit">Audit Settings</TabsTrigger>
+          <TabsTrigger value="integrations">Integrations</TabsTrigger>
+          <TabsTrigger value="team">Team</TabsTrigger>
+          <TabsTrigger value="danger">Danger Zone</TabsTrigger>
+        </TabsList>
+        <TabsContent value="general" className="mt-6">
+          <ProjectGeneralSettings project={project} />
+        </TabsContent>
+        <TabsContent value="audit" className="mt-6">
+          <ProjectAuditSettings projectId={projectId} settings={settings} />
+        </TabsContent>
+        <TabsContent value="integrations" className="mt-6">
+          <ProjectIntegrationSettings projectId={projectId} settings={settings} />
+        </TabsContent>
+        <TabsContent value="team" className="mt-6">
+          <ProjectTeamSettings projectId={projectId} organizationId={project.organizationId} />
+        </TabsContent>
+        <TabsContent value="danger" className="mt-6">
+          <ProjectDangerZone projectId={projectId} projectName={project.name} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
