@@ -92,21 +92,23 @@ This document outlines the comprehensive plan for improving our SEO audit system
 ## Technical Implementation Plan
 
 ### Phase 1: Core Infrastructure
-1. **Crawler Enhancement**
-   - Implement parallel processing
+1. **Enhanced Crawler System**
+   - Implement Crawlee.js RequestQueue for job management
    - Add proxy support
-   - Improve rate limiting
+   - Improve rate limiting via Crawlee's built-in features
    - Add custom user agents
-   - Better error handling
-   - Resume capability
+   - Implement robust error handling and recovery
+   - Add resume capability using Crawlee's state persistence
+   - Use Dataset storage for intermediate results
 
-2. **Data Processing Pipeline**
-   - Implement queue system
-   - Add data validation
-   - Create processing workers
-   - Set up error recovery
-   - Add progress tracking
-   - Implement caching
+2. **Optimized Processing Pipeline**
+   - Use Crawlee.js's built-in queue system
+   - Implement strong data validation
+   - Create efficient processing workers
+   - Set up error recovery mechanisms
+   - Add detailed progress tracking
+   - Use PostgreSQL for results caching
+   - Implement batched database operations
 
 ### Phase 2: Analysis Modules
 1. **SEO Analysis Engine**
@@ -160,9 +162,8 @@ This document outlines the comprehensive plan for improving our SEO audit system
 Total estimated time: 7-10 weeks
 
 ## Required Tools & Technologies
-- Crawlee.js for web crawling
-- Redis for job queues
-- PostgreSQL for data storage
+- Crawlee.js for web crawling and job management
+- PostgreSQL for data storage and caching
 - Google Lighthouse for performance
 - Gemini 1.5 for AI analysis
 - Next.js 14 App Router
