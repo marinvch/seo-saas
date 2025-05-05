@@ -17,7 +17,10 @@ const nextConfig = {
       },
     ],
   },
-  // Server Actions are available by default in Next.js 14+
+  swcMinify: true,
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
 }
 
 module.exports = nextConfig
