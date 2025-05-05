@@ -1,5 +1,6 @@
 'use client';
 
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { useEffect } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -60,5 +61,13 @@ export function AuditProgress({ projectId, className }: AuditProgressProps) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+export default function AuditProgressWithError(props: { projectId: string }) {
+  return (
+    <ErrorBoundary>
+      <AuditProgress {...props} />
+    </ErrorBoundary>
   );
 }

@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { CalendarIcon, Loader2, SaveIcon, TrashIcon } from 'lucide-react';
 import { formatDistance } from 'date-fns';
 import { RankTrackingFrequency } from '@prisma/client';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 
 interface AuditSchedule {
   id: string;
@@ -294,5 +295,13 @@ export function AuditScheduleManager() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function AuditScheduleManagerWithError(props: { projectId: string }) {
+  return (
+    <ErrorBoundary>
+      <AuditScheduleManager {...props} />
+    </ErrorBoundary>
   );
 }

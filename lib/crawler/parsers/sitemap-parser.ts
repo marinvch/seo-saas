@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { log } from 'crawlee';
-import { parseStringPromise } from 'xml2js';
+import { XMLParser } from 'fast-xml-parser';
 
 /**
  * Parse a sitemap.xml file and extract all URLs
@@ -18,15 +18,22 @@ export async function parseSitemap(url: string): Promise<string[]> {
       }
     });
     
-    // Check if we got XML or gzip
+    // Check if we got XML
     const contentType = response.headers['content-type'];
     if (!contentType || !contentType.includes('xml')) {
       log.warning(`Sitemap at ${url} is not XML, got content-type: ${contentType}`);
     }
     
+    // Initialize parser with options
+    const parser = new XMLParser({
+      ignoreAttributes: false,
+      parseAttributeValue: true,
+      allowBooleanAttributes: true
+    });
+    
     // Parse the XML
     const content = response.data;
-    return await extractUrlsFromSitemap(content, url);
+    return await extractUrlsFromSitemap(content, url, parser);
   } catch (error) {
     log.warning(`Failed to fetch sitemap from ${url}: ${error}`);
     return [];
@@ -36,11 +43,9 @@ export async function parseSitemap(url: string): Promise<string[]> {
 /**
  * Extract URLs from sitemap XML content
  */
-async function extractUrlsFromSitemap(xml: string, sitemapUrl: string): Promise<string[]> {
+async function extractUrlsFromSitemap(xml: string, sitemapUrl: string, parser: XMLParser): Promise<string[]> {
   try {
-    const result = await parseStringPromise(xml, { explicitArray: false });
-    
-    // URLs found in this sitemap
+    const result = parser.parse(xml);
     const urls: string[] = [];
     
     // Check if this is a sitemap index (contains multiple sitemaps)
@@ -74,11 +79,6 @@ async function extractUrlsFromSitemap(xml: string, sitemapUrl: string): Promise<
       for (const item of urlset) {
         if (item.loc) {
           urls.push(item.loc);
-          
-          // Extract additional metadata if needed
-          // const lastmod = item.lastmod;
-          // const changefreq = item.changefreq;
-          // const priority = item.priority;
         }
       }
     } 

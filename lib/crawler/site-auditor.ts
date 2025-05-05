@@ -846,3 +846,91 @@ export class SiteAuditor {
     });
   }
 }
+
+// Import necessary modules
+import { Router } from 'crawlee';
+import { prisma } from '@/lib/db/prisma-client';
+import { createPlaywrightRouter } from 'crawlee';
+import type { SiteAuditConfig } from '@/types/audit';
+
+// Configure the crawler router with handlers
+const router = createPlaywrightRouter();
+
+// Create a crawler instance for the audit
+export async function startSiteAudit(auditId: string, config: SiteAuditConfig): Promise<void> {
+  try {
+    // Update audit status to in progress
+    await prisma.siteAudit.update({
+      where: { id: auditId },
+      data: { status: 'IN_PROGRESS' }
+    });
+
+    // Initialize the router
+    router.addDefaultHandler(async ({ request, page, enqueueLinks, log }) => {
+      const { url } = request;
+      log.info(`Processing ${url}...`);
+
+      // Extract page info
+      const title = await page.title();
+      const meta = await page.evaluate(() => {
+        const description = document.querySelector('meta[name="description"]')?.getAttribute('content');
+        return { description };
+      });
+
+      // Capture screenshot if enabled
+      let screenshot = null;
+      if (config.includeScreenshots) {
+        screenshot = await page.screenshot();
+        // TODO: Save screenshot to storage
+      }
+
+      // Queue discovered links
+      if (config.skipExternal) {
+        await enqueueLinks({
+          strategy: 'same-domain',
+          transformRequestFunction: (req) => {
+            // Respect maxDepth
+            if (req.userData.depth > config.maxDepth) return false;
+            return req;
+          },
+        });
+      }
+
+      // TODO: Run SEO analysis on the page
+      // TODO: Save page results
+
+      // Update progress
+      await updateAuditProgress(auditId);
+    });
+
+    // TODO: Initialize and run crawler with config
+    // For now just simulate completion
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    await markAuditComplete(auditId);
+  } catch (error) {
+    console.error(`Error in audit ${auditId}:`, error);
+    // Mark audit as failed
+    await prisma.siteAudit.update({
+      where: { id: auditId },
+      data: {
+        status: 'FAILED',
+        errorMessage: error instanceof Error ? error.message : 'Unknown error occurred'
+      }
+    });
+    throw error;
+  }
+}
+
+async function updateAuditProgress(auditId: string): Promise<void> {
+  // TODO: Implement progress tracking
+}
+
+async function markAuditComplete(auditId: string): Promise<void> {
+  await prisma.siteAudit.update({
+    where: { id: auditId },
+    data: {
+      status: 'COMPLETED',
+      completedAt: new Date(),
+    }
+  });
+}

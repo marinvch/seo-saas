@@ -212,19 +212,19 @@ model ProjectSettings {
 
 model SiteAudit {
   id                 String         @id @default(uuid())
-  projectId          String
+  projectId          String?        // Make projectId optional
   siteUrl            String
   status             AuditStatus    @default(PENDING)
   startedAt          DateTime       @default(now())
   completedAt        DateTime?
   totalPages         Int            @default(0)
-  progressPercentage Int? // Stores the current progress (0-100)
-  options            Json // Store the audit options
-  pageResults        Json? // Store the detailed page results
-  issuesSummary      Json // Store the summary of issues
-  errorMessage       String? // Store error message if audit fails
-  htmlReport         String? // Path to generated HTML report
-  project            Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  progressPercentage Int?           // Stores the current progress (0-100)
+  options            Json           // Store the audit options
+  pageResults        Json?          // Store the detailed page results
+  issuesSummary      Json          // Store the summary of issues
+  errorMessage       String?        // Store error message if audit fails
+  htmlReport         String?        // Path to generated HTML report
+  project            Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)  // Make relation optional
   auditHistory       AuditHistory[]
 
   @@index([projectId])

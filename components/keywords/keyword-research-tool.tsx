@@ -39,6 +39,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 
 interface KeywordResearchToolProps {
   projectId: string;
@@ -413,5 +414,13 @@ export function KeywordResearchTool({ projectId }: KeywordResearchToolProps) {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+export default function KeywordResearchToolWithError(props: { projectId: string }) {
+  return (
+    <ErrorBoundary>
+      <KeywordResearchTool {...props} />
+    </ErrorBoundary>
   );
 }

@@ -16,6 +16,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, FileUpIcon, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 
 interface BulkImportKeywordsProps {
   projectId: string;
@@ -152,5 +153,13 @@ content strategy
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+export default function BulkKeywordImportWithError(props: { projectId: string }) {
+  return (
+    <ErrorBoundary>
+      <BulkImportKeywords {...props} />
+    </ErrorBoundary>
   );
 }

@@ -1,137 +1,85 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/auth';
-import { PrismaClient } from '@prisma/client';
-import { simulateAudit } from '@/lib/services/audit-service';
+import { NextRequest, NextResponse } from "next/server";
+import { withApiAuth } from "@/lib/auth/api-auth";
+import { prisma } from "@/lib/db/prisma-client";
+import { z } from "zod";
+import { AuditStatus } from "@prisma/client";
+import { startSiteAudit } from "@/lib/crawler/site-auditor";
+import type { SiteAuditConfig } from "@/types/audit";
 
-const prisma = new PrismaClient();
+const auditConfigSchema = z.object({
+  startUrl: z.string().url(),
+  maxDepth: z.number().min(1).max(10),
+  emulateDevice: z.enum(["desktop", "mobile"]),
+  respectRobotsTxt: z.boolean(),
+  includeScreenshots: z.boolean(),
+  skipExternal: z.boolean(),
+  maxRequestsPerCrawl: z.number().min(10).max(500),
+  maxConcurrency: z.number().min(1).max(10),
+  includeSitemap: z.boolean(),
+  projectId: z.string().optional(),
+});
 
-/**
- * POST /api/audit/start - Start a new audit or process a queued audit
- */
-export async function POST(request: NextRequest) {
+export const POST = withApiAuth(async (req: NextRequest) => {
   try {
-    // Check if this is an internal request (from scheduler) or user request
-    const data = await request.json();
-    const { auditId, projectId, options } = data;
+    const data = await req.json();
+    const validatedConfig = auditConfigSchema.parse(data);
+    
+    // Separate config from projectId for type safety
+    const { projectId, ...auditConfig } = validatedConfig;
 
-    // If auditId is provided, this is an internal request to process a queued audit
-    if (auditId) {
-      // Update the audit status
-      await prisma.siteAudit.update({
-        where: { id: auditId },
-        data: { 
-          status: 'IN_PROGRESS',
-          progressPercentage: 0
-        }
-      });
+    // Create base audit data
+    const auditData = {
+      siteUrl: auditConfig.startUrl,
+      status: "PENDING" as AuditStatus,
+      options: auditConfig,
+      issuesSummary: {
+        critical: 0,
+        warning: 0,
+        info: 0,
+        total: 0,
+      },
+    };
 
-      // Start the audit process asynchronously
-      // In a production environment, this would be handled by a separate worker
-      simulateAudit(auditId).catch(error => {
-        console.error(`Error in audit simulation for ${auditId}:`, error);
-      });
+    // Add projectId if provided
+    const createData = projectId 
+      ? { ...auditData, projectId }
+      : auditData;
 
-      return NextResponse.json({ success: true, auditId });
-    } 
-    // Otherwise, this is a user request to create a new audit
-    else {
-      // Check authorization for user requests
-      const session = await getServerSession(authOptions);
-      if (!session) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
+    // Create audit record
+    const audit = await prisma.siteAudit.create({
+      data: createData,
+    });
 
-      if (!projectId) {
-        return NextResponse.json({ error: 'Missing projectId' }, { status: 400 });
-      }
-
-      // Fetch the project
-      const project = await prisma.project.findUnique({
-        where: { id: projectId },
-        include: {
-          organization: true
-        }
-      });
-
-      if (!project) {
-        return NextResponse.json({ error: 'Project not found' }, { status: 404 });
-      }
-
-      // Check if user has access to this project
-      const userHasAccess = await checkUserAccessToProject(
-        session.user.id, 
-        project.organizationId, 
-        projectId
-      );
-
-      if (!userHasAccess) {
-        return NextResponse.json({ error: 'You do not have access to this project' }, { status: 403 });
-      }
-
-      // Create the audit
-      const audit = await prisma.siteAudit.create({
+    // Start the audit process asynchronously
+    startSiteAudit(audit.id, auditConfig as SiteAuditConfig).catch((error: Error) => {
+      console.error(`Failed to start audit ${audit.id}:`, error);
+      // Update audit status to failed
+      prisma.siteAudit.update({
+        where: { id: audit.id },
         data: {
-          projectId,
-          siteUrl: project.url,
-          status: 'PENDING',
-          options: options || {},
-          issuesSummary: {
-            critical: 0,
-            warning: 0,
-            info: 0,
-            total: 0
-          }
-        }
-      });
+          status: "FAILED",
+          errorMessage: error.message,
+        },
+      }).catch(console.error);
+    });
 
-      // Queue the audit for processing (in a production system this would go to a job queue)
-      // For now, we'll start it directly
-      simulateAudit(audit.id).catch(error => {
-        console.error(`Error in audit simulation for ${audit.id}:`, error);
-      });
-
-      return NextResponse.json({ 
-        success: true, 
-        auditId: audit.id 
-      });
-    }
+    return NextResponse.json({
+      auditId: audit.id,
+      message: "Audit started successfully",
+    });
   } catch (error) {
-    console.error('Error starting audit:', error);
+    console.error("Error starting audit:", error);
+    
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Invalid input data", details: error.errors },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
-      { error: 'Failed to start audit' },
+      { error: "Failed to start audit" },
       { status: 500 }
     );
   }
-}
-
-/**
- * Helper function to check if a user has access to a project
- */
-async function checkUserAccessToProject(
-  userId: string, 
-  organizationId: string, 
-  projectId: string
-): Promise<boolean> {
-  // Check if user is the creator of the project
-  const project = await prisma.project.findFirst({
-    where: {
-      id: projectId,
-      createdById: userId
-    }
-  });
-
-  if (project) {
-    return true;
-  }
-
-  // Check if user is a member of the organization
-  const orgMember = await prisma.organizationUser.findFirst({
-    where: {
-      organizationId,
-      userId
-    }
-  });
-
-  return !!orgMember;
-}
+});

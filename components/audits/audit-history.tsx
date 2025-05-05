@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { ArrowRight, Download, BarChart2 } from 'lucide-react';
 import type { AuditStatus } from '@prisma/client';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 
 interface AuditRecord {
   id: string;
@@ -103,5 +104,13 @@ export function AuditHistory({ audits, onViewDetails, className }: AuditHistoryP
         </Table>
       </CardContent>
     </Card>
+  );
+}
+
+export default function AuditHistoryWithError(props: { projectId: string }) {
+  return (
+    <ErrorBoundary>
+      <AuditHistory {...props} />
+    </ErrorBoundary>
   );
 }

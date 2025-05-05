@@ -85,14 +85,23 @@ export const PATCH = withApiAuth(async (req: NextRequest, { params }: { params: 
 
     // Update the scheduler
     const scheduler = AuditScheduler.getInstance();
+    const scheduleConfig = {
+      id: scheduleId,
+      projectId,
+      frequency: updatedSchedule.frequency.toLowerCase() as 'daily' | 'weekly' | 'monthly',
+      nextRunAt: updatedSchedule.nextRunAt.toISOString(),
+      isActive: updatedSchedule.isActive,
+      options: updatedSchedule.options as Record<string, any> || {}
+    };
+
     if (validatedData.isActive !== undefined) {
       if (validatedData.isActive) {
-        await scheduler.updateSchedule(scheduleId, updatedSchedule);
+        await scheduler.createOrUpdateSchedule(scheduleConfig);
       } else {
         await scheduler.deleteSchedule(scheduleId);
       }
     } else if (validatedData.frequency || validatedData.options) {
-      await scheduler.updateSchedule(scheduleId, updatedSchedule);
+      await scheduler.createOrUpdateSchedule(scheduleConfig);
     }
 
     return NextResponse.json(updatedSchedule);

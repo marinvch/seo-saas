@@ -29,6 +29,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
 import type { ProjectSettings } from '@prisma/client';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 
 const projectSettingsSchema = z.object({
   rankTrackingFreq: z.enum(['DAILY', 'WEEKLY', 'MONTHLY']),
@@ -206,5 +207,13 @@ export function ProjectSettingsForm({ projectId, initialSettings }: ProjectSetti
         </Form>
       </CardContent>
     </Card>
+  );
+}
+
+export default function ProjectSettingsFormWithError(props: ProjectSettingsFormProps) {
+  return (
+    <ErrorBoundary>
+      <ProjectSettingsForm {...props} />
+    </ErrorBoundary>
   );
 }

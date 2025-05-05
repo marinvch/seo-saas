@@ -1,3 +1,5 @@
+import { AuditStatus } from '@prisma/client';
+
 /**
  * Represents an issue found during an SEO site audit
  */
@@ -71,4 +73,48 @@ export type AuditScheduleConfig = {
   nextRunAt: string;
   isActive: boolean;
   options: Record<string, any>;
+};
+
+export type SiteAuditConfig = {
+  startUrl: string;
+  maxDepth: number;
+  emulateDevice: 'desktop' | 'mobile';
+  respectRobotsTxt: boolean;
+  includeScreenshots: boolean;
+  skipExternal: boolean;
+  maxRequestsPerCrawl: number;
+  maxConcurrency: number;
+  includeSitemap: boolean;
+  projectId?: string;
+};
+
+export type SiteAuditResult = {
+  id: string;
+  projectId: string;
+  siteUrl: string;
+  status: AuditStatus;
+  startedAt: Date;
+  completedAt?: Date | null;
+  totalPages: number;
+  progressPercentage?: number;
+  options: Record<string, any>;
+  pageResults?: Record<string, any>;
+  issuesSummary: {
+    critical: number;
+    warning: number;
+    info: number;
+    total: number;
+  };
+  errorMessage?: string;
+  htmlReport?: string;
+};
+
+export type SEOIssue = {
+  severity: 'critical' | 'warning' | 'info';
+  code: string;
+  message: string;
+  details?: string;
+  url?: string;
+  affectedUrls?: string[];
+  suggestions?: string[];
 };

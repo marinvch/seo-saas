@@ -6,17 +6,40 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import axios from "axios";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SiteAuditConfig } from "@/types/audit";
+import { Loader2 } from "lucide-react";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
+import type { SiteAuditConfig } from "@/types/audit";
 
 // Form schema for site audit configuration
 const auditFormSchema = z.object({
@@ -24,27 +47,32 @@ const auditFormSchema = z.object({
     message: "Please enter a valid URL (e.g. https://example.com)",
   }),
   maxDepth: z.number().min(1).max(10),
-  emulateDevice: z.enum(["desktop", "mobile"]),
-  respectRobotsTxt: z.boolean().default(true),
-  includeScreenshots: z.boolean().default(false),
-  skipExternal: z.boolean().default(true),
+  emulateDevice: z.enum(["desktop", "mobile"] as const),
+  respectRobotsTxt: z.boolean(),
+  includeScreenshots: z.boolean(),
+  skipExternal: z.boolean(),
   maxRequestsPerCrawl: z.number().min(10).max(500),
   maxConcurrency: z.number().min(1).max(10),
-  includeSitemap: z.boolean().default(true),
+  includeSitemap: z.boolean(),
 });
 
-type StartAuditProps = {
+type FormValues = z.infer<typeof auditFormSchema>;
+
+interface StartAuditProps {
   projectId?: string;
   projectUrl?: string;
   onAuditStarted?: (auditId: string) => void;
-};
+}
 
-export function StartAudit({ projectId, projectUrl, onAuditStarted }: StartAuditProps) {
+function StartAuditForm({
+  projectId,
+  projectUrl,
+  onAuditStarted,
+}: StartAuditProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
-  // Define form with schema validation
-  const form = useForm<z.infer<typeof auditFormSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(auditFormSchema),
     defaultValues: {
       startUrl: projectUrl || "",
@@ -59,50 +87,43 @@ export function StartAudit({ projectId, projectUrl, onAuditStarted }: StartAudit
     },
   });
 
-  // Handle form submission
-  async function onSubmit(values: z.infer<typeof auditFormSchema>) {
+  const onSubmit = async (values: FormValues) => {
     try {
       setIsSubmitting(true);
 
-      // Prepare audit config
-      const auditConfig: SiteAuditConfig & { projectId?: string } = {
+      const auditConfig: SiteAuditConfig = {
         ...values,
+        projectId,
       };
 
-      // Add project ID if provided
-      if (projectId) {
-        auditConfig.projectId = projectId;
-      }
-
-      // Call API to start audit
-      const response = await axios.post("/api/audit", auditConfig);
+      const response = await axios.post("/api/audit/start", auditConfig);
       const { auditId } = response.data;
 
-      // Show success notification
+      if (!auditId) {
+        throw new Error("No audit ID returned from server");
+      }
+
       toast({
         title: "Audit started successfully",
         description: "You can track the progress in the audit history section.",
         duration: 5000,
       });
 
-      // Call the callback if provided
-      if (onAuditStarted && auditId) {
+      // Handle success based on context
+      if (onAuditStarted) {
         onAuditStarted(auditId);
       } else if (projectId) {
-        // Navigate to audit details page
         router.push(`/dashboard/projects/${projectId}/audits/${auditId}`);
       } else {
-        // Navigate to audit results page without project context
         router.push(`/dashboard/audits/${auditId}`);
       }
     } catch (error) {
       console.error("Failed to start audit:", error);
-      
-      // Show error notification
+
       toast({
         title: "Failed to start audit",
         description: axios.isAxiosError(error)
-          ? error.response?.data?.message || error.message
+          ? error.response?.data?.message || "Server error occurred"
           : "An unexpected error occurred",
         variant: "destructive",
         duration: 5000,
@@ -110,7 +131,7 @@ export function StartAudit({ projectId, projectUrl, onAuditStarted }: StartAudit
     } finally {
       setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <Card className="w-full">
@@ -128,7 +149,7 @@ export function StartAudit({ projectId, projectUrl, onAuditStarted }: StartAudit
                 <TabsTrigger value="basic">Basic Settings</TabsTrigger>
                 <TabsTrigger value="advanced">Advanced Settings</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="basic" className="pt-4 space-y-6">
                 <FormField
                   control={form.control}
@@ -140,6 +161,7 @@ export function StartAudit({ projectId, projectUrl, onAuditStarted }: StartAudit
                         <Input
                           placeholder="https://example.com"
                           {...field}
+                          disabled={!!projectUrl}
                         />
                       </FormControl>
                       <FormDescription>
@@ -149,7 +171,7 @@ export function StartAudit({ projectId, projectUrl, onAuditStarted }: StartAudit
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="maxDepth"
@@ -162,7 +184,9 @@ export function StartAudit({ projectId, projectUrl, onAuditStarted }: StartAudit
                           max={10}
                           step={1}
                           value={[field.value]}
-                          onValueChange={(values) => field.onChange(values[0])}
+                          onValueChange={(values: number[]) =>
+                            field.onChange(values[0])
+                          }
                         />
                       </FormControl>
                       <FormDescription>
@@ -172,7 +196,7 @@ export function StartAudit({ projectId, projectUrl, onAuditStarted }: StartAudit
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="emulateDevice"
@@ -200,7 +224,7 @@ export function StartAudit({ projectId, projectUrl, onAuditStarted }: StartAudit
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="includeSitemap"
@@ -211,7 +235,8 @@ export function StartAudit({ projectId, projectUrl, onAuditStarted }: StartAudit
                           Analyze Sitemap
                         </FormLabel>
                         <FormDescription>
-                          Parse sitemap.xml to discover and audit additional pages
+                          Parse sitemap.xml to discover and audit additional
+                          pages
                         </FormDescription>
                       </div>
                       <FormControl>
@@ -223,7 +248,7 @@ export function StartAudit({ projectId, projectUrl, onAuditStarted }: StartAudit
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="respectRobotsTxt"
@@ -247,14 +272,15 @@ export function StartAudit({ projectId, projectUrl, onAuditStarted }: StartAudit
                   )}
                 />
               </TabsContent>
-              
+
               <TabsContent value="advanced" className="pt-4 space-y-6">
                 <Alert>
                   <AlertDescription>
-                    These advanced settings control how the audit crawler behaves. Default values work well for most websites.
+                    These advanced settings control how the audit crawler
+                    behaves. Default values work well for most websites.
                   </AlertDescription>
                 </Alert>
-                
+
                 <FormField
                   control={form.control}
                   name="maxRequestsPerCrawl"
@@ -267,7 +293,9 @@ export function StartAudit({ projectId, projectUrl, onAuditStarted }: StartAudit
                           max={500}
                           step={10}
                           value={[field.value]}
-                          onValueChange={(values) => field.onChange(values[0])}
+                          onValueChange={(values: number[]) =>
+                            field.onChange(values[0])
+                          }
                         />
                       </FormControl>
                       <FormDescription>
@@ -277,7 +305,7 @@ export function StartAudit({ projectId, projectUrl, onAuditStarted }: StartAudit
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="maxConcurrency"
@@ -290,7 +318,9 @@ export function StartAudit({ projectId, projectUrl, onAuditStarted }: StartAudit
                           max={10}
                           step={1}
                           value={[field.value]}
-                          onValueChange={(values) => field.onChange(values[0])}
+                          onValueChange={(values: number[]) =>
+                            field.onChange(values[0])
+                          }
                         />
                       </FormControl>
                       <FormDescription>
@@ -300,7 +330,7 @@ export function StartAudit({ projectId, projectUrl, onAuditStarted }: StartAudit
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="skipExternal"
@@ -323,7 +353,7 @@ export function StartAudit({ projectId, projectUrl, onAuditStarted }: StartAudit
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="includeScreenshots"
@@ -348,20 +378,34 @@ export function StartAudit({ projectId, projectUrl, onAuditStarted }: StartAudit
                 />
               </TabsContent>
             </Tabs>
-            
-            <CardFooter className="px-0">
-              <Button 
-                type="submit" 
-                className="w-full" 
-                size="lg"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Starting Audit..." : "Start Audit"}
-              </Button>
-            </CardFooter>
+
+            <Button
+              type="submit"
+              className="w-full"
+              size="lg"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Starting Audit...
+                </>
+              ) : (
+                "Start Audit"
+              )}
+            </Button>
           </form>
         </Form>
       </CardContent>
     </Card>
+  );
+}
+
+// Wrap with ErrorBoundary for better error handling
+export function StartAudit(props: StartAuditProps) {
+  return (
+    <ErrorBoundary>
+      <StartAuditForm {...props} />
+    </ErrorBoundary>
   );
 }

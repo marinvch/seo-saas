@@ -1,5 +1,6 @@
 'use client';
 
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 import {
   Card,
   CardHeader,
@@ -130,5 +131,13 @@ export function SEOIssuesSummary({ issues, totalPages, className }: SEOIssuesSum
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+export default function SEOIssuesSummaryWithError(props: SEOIssuesSummaryProps) {
+  return (
+    <ErrorBoundary>
+      <SEOIssuesSummary {...props} />
+    </ErrorBoundary>
   );
 }
