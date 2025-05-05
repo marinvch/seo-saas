@@ -52,6 +52,7 @@ export class SiteAuditor {
         maxConcurrency: 5,        // Default concurrency
         maxRequestRetries: 3,     // Default retries
         navigationTimeout: 30000, // Default timeout (30 seconds)
+        userAgent: 'SEOMaster Audit Bot/1.0',
       },
       ...config
     };
@@ -62,13 +63,18 @@ export class SiteAuditor {
     // Initialize logger
     log.setLevel(log.LEVELS.DEBUG);
     
-    // Create the crawler instance with enhanced configurations
+    // Enhanced crawler configuration with proxy support
     this.crawler = new PlaywrightCrawler({
       // Use Playwright browser with specific configuration
       browserPoolOptions: {
         useIncognitoPages: true,
         launchOptions: {
           headless: true,
+          proxy: this.config.proxyUrl ? {
+            server: this.config.proxyUrl,
+            username: this.config.proxyUsername,
+            password: this.config.proxyPassword,
+          } : undefined,
         },
       },
       
@@ -81,6 +87,11 @@ export class SiteAuditor {
       // Enhanced pre-navigation hook for headers and device emulation
       preNavigationHooks: [
         async ({ page, request }) => {
+          // Set user agent if specified
+          if (this.config.userAgent) {
+            await page.setUserAgent(this.config.userAgent);
+          }
+
           // Set custom headers if specified
           if (this.config.customHeaders) {
             await page.setExtraHTTPHeaders(this.config.customHeaders);
